@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: backend
+    container_name: backend
+
+
+
+
+##    NETWORKS    ##
+
+networks:
+  app-network:
+    driver: bridge
+
+
+
+##    VOLUMES    ##
+
+volumes:
+  database:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 
+  
