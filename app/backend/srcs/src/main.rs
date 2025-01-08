@@ -1,11 +1,12 @@
 mod routes;
 mod utils;
 
-use std::ops::Deref;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use postgres::{Client, NoTls};
-use utils::database::MyDatabase;
+use sqlx::postgres::PgPoolOptions;
+use tokio_postgres::NoTls;
+use utils::app_state::AppState;
+// use utils::database::MyDatabase;
 
 type ActixResult<T> = Result<T, actix_web::Error>;
 
@@ -19,31 +20,23 @@ async fn main() -> std::io::Result<()> {
     // std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    let port = utils::constant::PORT.deref().clone();
-    let addr = utils::constant::ADDRESS.deref().clone();
+    let port = utils::constant::PORT.clone();
+    let addr = utils::constant::ADDRESS.clone();
+    let database_url = utils::constant::DATABASE_URL.clone();
 
-    let mut db = MyDatabase::init();
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Failed to create pool");
 
-    db.batch_execute(
-        "
-        CREATE TABLE IF NOT EXISTS user (
-            id          SERIAL PRIMARY KEY UNIQUE,
-            username    VARCHAR UNIQUE NOT NULL,
-            password    UNIQUE NOT NULL,
-            email       VARCHAR UNIQUE NOT NULL,
-            )
-        ",
-    ).unwrap();
-
-    // HttpServer::new(move || {
-    //     App::new()
-    //     .app_data(web::Data::new( db ))
-    //     .wrap(Logger::new("%a %r %s"))
-    //     .configure(routes::home_routes::config)
-    // })
-    // .bind((addr, port))?
-    // .run()
-    // .await
-
-    Ok(())
+    HttpServer::new(move || {
+        App::new()
+        .app_data(web::Data::new( AppState { db: pool.clone() } ))
+        .wrap(Logger::new("%a %r %s"))
+        .configure(routes::home_routes::config)
+    })
+    .bind((addr, port))?
+    .run()
+    .await
 }

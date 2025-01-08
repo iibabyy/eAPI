@@ -18,6 +18,15 @@ async fn root() -> ApiResponse {
     )
 }
 
+
+// #[get("/new")]
+// async fn root() -> ApiResponse {
+//     ApiResponse::new(
+//         200,
+//         String::from("Hmm, who are you ?")
+//     )
+// }
+
 #[get("/{username}")]
 async fn greet(user: Path<String>) -> ApiResponse {
     ApiResponse::new(

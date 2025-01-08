@@ -1,6 +1,7 @@
 use actix_web::web;
 use super::handlers;
 
+#[allow(dead_code)]
 pub fn config(config: &mut web::ServiceConfig) {
 	config
 	.service(web::scope("/user")

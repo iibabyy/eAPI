@@ -1,5 +1,6 @@
 use actix_web::{body::BoxBody, http, web, HttpResponse, Responder};
 
+#[allow(unused)]
 #[derive(Debug)]
 pub struct ApiResponse {
 	pub status_code: u16,
@@ -17,6 +18,7 @@ impl ApiResponse {
 	}
 }
 
+#[allow(unused)]
 impl Responder for ApiResponse {
 	type Body = BoxBody;
 
