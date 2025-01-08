@@ -4,8 +4,8 @@ mod utils;
 use std::ops::Deref;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use sea_orm::{Database, DatabaseConnection};
-use utils::app_state::AppState;
+use postgres::{Client, NoTls};
+use utils::database::MyDatabase;
 
 type ActixResult<T> = Result<T, actix_web::Error>;
 
@@ -21,17 +21,29 @@ async fn main() -> std::io::Result<()> {
 
     let port = utils::constant::PORT.deref().clone();
     let addr = utils::constant::ADDRESS.deref().clone();
-    let database_url = utils::constant::DATABASE_URL.deref().clone();
 
-    let db: DatabaseConnection = Database::connect(database_url).await.expect("failed to connect to database");
+    let mut db = MyDatabase::init();
 
-    HttpServer::new(move || {
-        App::new()
-        .app_data(web::Data::new( AppState { db: db.clone() } ))
-        .wrap(Logger::new("%a %r %s"))
-        .configure(routes::home_routes::config)
-    })
-    .bind((addr, port))?
-    .run()
-    .await
+    db.batch_execute(
+        "
+        CREATE TABLE IF NOT EXISTS user (
+            id          SERIAL PRIMARY KEY UNIQUE,
+            username    VARCHAR UNIQUE NOT NULL,
+            password    UNIQUE NOT NULL,
+            email       VARCHAR UNIQUE NOT NULL,
+            )
+        ",
+    ).unwrap();
+
+    // HttpServer::new(move || {
+    //     App::new()
+    //     .app_data(web::Data::new( db ))
+    //     .wrap(Logger::new("%a %r %s"))
+    //     .configure(routes::home_routes::config)
+    // })
+    // .bind((addr, port))?
+    // .run()
+    // .await
+
+    Ok(())
 }

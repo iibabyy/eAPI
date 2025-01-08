@@ -1,6 +1,10 @@
-FROM rust:bullseye-
+FROM rust:bullseye
 
 RUN apt update -y
 RUN apt upgrade -y
 
-COPY ./srcs /app
+COPY ./srcs /app/myapp
+
+WORKDIR /app/myapp
+
+CMD [ "cargo", "run" ]

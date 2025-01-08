@@ -2,8 +2,19 @@ services:
   backend:
     build: backend
     container_name: backend
+    env_file: backend/srcs/.env
 
-
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=myapp
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
 
 
 ##    NETWORKS    ##
@@ -17,10 +28,4 @@ networks:
 ##    VOLUMES    ##
 
 volumes:
-  database:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: 
-  
+  database: {}
