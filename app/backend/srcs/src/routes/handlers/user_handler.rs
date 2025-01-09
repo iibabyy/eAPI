@@ -2,7 +2,7 @@ use actix_web::{get, web::{self, Path, Query}, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 
-use crate::{user::User, utils::{api_response::ApiResponse, app_state::AppState}, ActixResult};
+use crate::{user::{LoginInput, User}, utils::{api_response::ApiResponse, app_state::AppState}, ActixResult};
 
 
 #[get("/")]
@@ -13,19 +13,35 @@ async fn root() -> ApiResponse {
     )
 }
 
-#[get("get/{email}")]
-async fn get_user(email: Path<String>, data: web::Data<AppState>) -> HttpResponse {
-    match sqlx::query_as!(
+#[get("get/")]
+async fn get_user(input: Query<LoginInput>, data: web::Data<AppState>) -> HttpResponse {
+    let user = match sqlx::query_as!(
         User,
-        r#"SELECT id, username, email FROM "users" WHERE email = $1"#,
-        email.into_inner()
+        r#"
+        SELECT
+            id,
+            username,
+            email,
+            password
+        FROM
+            "users"
+        WHERE
+            email = $1
+        "#,
+        input.email,
     )
     .fetch_optional(&data.db)
     .await {
-        Ok(Some(user)) => { HttpResponse::Ok().json(user) },
-        Ok(None) => HttpResponse::NotFound().body("User not found"),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
+        Ok(Some(user)) => user,
+        Ok(None) => return HttpResponse::NotFound().body("username or password incorrect"),
+        Err(e) => return HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
+    };
+
+    match input.password == user.password {
+        true => return HttpResponse::Ok().json(user),
+        false => return HttpResponse::NotFound().body("username or password incorrect"),
     }
+
 }
 
 #[get("/add/{username}/{email}/{password}")]

@@ -55,7 +55,7 @@ impl UserDb {
 
 	pub async fn clients(&self) -> PostgresResult<Vec<User>> {
 		let rows = self.query(
-				"SELECT id, name, email FROM users",
+				"SELECT id, name, email, password FROM users",
 				&[],
 			).await?;
 
@@ -66,6 +66,7 @@ impl UserDb {
 					id: row.get("id"),
 					username: row.get("username"),
 					email: row.get("email"),
+					password: row.get("password"),
 				}
 			)
 			.collect();
