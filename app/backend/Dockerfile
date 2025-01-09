@@ -7,4 +7,5 @@ COPY ./srcs /app/myapp
 
 WORKDIR /app/myapp
 
+# CMD ["bash"]
 CMD [ "cargo", "run" ]
