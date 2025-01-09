@@ -1,14 +1,9 @@
-use actix_web::{get, web::{Path, Query}};
+use actix_web::{get, web::{self, Path, Query}, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 
-use crate::{utils::api_response::ApiResponse, ActixResult};
+use crate::{try_get_client, user::User, utils::{api_response::ApiResponse, app_state::AppState}, ActixResult};
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct User {
-    username: String,
-    friend: String,
-}
 
 #[get("/")]
 async fn root() -> ApiResponse {
@@ -18,27 +13,21 @@ async fn root() -> ApiResponse {
     )
 }
 
+#[get("user/{id}")]
+async fn get_user(data: web::Data<AppState>) -> ApiResponse {
+    let client = match data.db. .db.get().await {
+        Ok(client) => client,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
+    };
 
-// #[get("/new")]
-// async fn root() -> ApiResponse {
-//     ApiResponse::new(
-//         200,
-//         String::from("Hmm, who are you ?")
-//     )
-// }
-
-#[get("/{username}")]
-async fn greet(user: Path<String>) -> ApiResponse {
-    ApiResponse::new(
-        200,
-        format!("Hello {user} !")
-    )
 }
 
-#[get("/query")]
-async fn add_friend(user: Query<User>) -> ActixResult<ApiResponse> {
-    Ok(ApiResponse::new(
+#[get("/add")]
+async fn add_user(data: web::Data<AppState>) -> ApiResponse {
+    
+    
+    ApiResponse::new(
         200,
-        format!("Hi {} ! I will ask {} if he wants to be your friend !", user.username, user.friend)
-    ))
+        String::from("Hmm, who are you ?")
+    )
 }

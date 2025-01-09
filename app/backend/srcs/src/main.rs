@@ -1,6 +1,7 @@
 mod routes;
 mod utils;
-
+mod database;
+mod user;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
@@ -20,8 +21,8 @@ async fn main() -> std::io::Result<()> {
     // std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    let port = utils::constant::PORT.clone();
-    let addr = utils::constant::ADDRESS.clone();
+    let port = utils::constant::DB_PORT.clone();
+    let addr = utils::constant::DB_ADDR.clone();
     let database_url = utils::constant::DATABASE_URL.clone();
 
     let pool = PgPoolOptions::new()
