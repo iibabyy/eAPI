@@ -21,8 +21,7 @@ async fn main() -> std::io::Result<()> {
     // std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    let port = utils::constant::DB_PORT.clone();
-    let addr = utils::constant::DB_ADDR.clone();
+    let port = utils::constant::LISTEN.clone();
     let database_url = utils::constant::DATABASE_URL.clone();
 
     let pool = PgPoolOptions::new()
@@ -37,7 +36,7 @@ async fn main() -> std::io::Result<()> {
         .wrap(Logger::new("%a %r %s"))
         .configure(routes::home_routes::config)
     })
-    .bind((addr, port))?
+    .bind(("localhost", port))?
     .run()
     .await
 }

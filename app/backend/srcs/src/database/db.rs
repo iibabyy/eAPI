@@ -64,7 +64,7 @@ impl UserDb {
 			.map(|row|
 				User {
 					id: row.get("id"),
-					name: row.get("name"),
+					username: row.get("username"),
 					email: row.get("email"),
 				}
 			)

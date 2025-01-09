@@ -37,7 +37,7 @@ fn set_port() -> u16 {
 
 fn set_addr() -> String {
 	dotenv::dotenv().ok();
-	env::var("POSTGRES_DB_ADDR").expect("POSTGRES_DB_ADDR: invalid environment variable")
+	env::var("POSTGRES_ADDRESS").expect("POSTGRES_ADDRESS: invalid environment variable")
 }
 
 fn set_db_user() -> String {
