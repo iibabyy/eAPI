@@ -13,7 +13,7 @@ async fn root() -> ApiResponse {
     )
 }
 
-#[get("get/")]
+#[get("get_user")]
 async fn get_user(input: Query<LoginInput>, data: web::Data<AppState>) -> HttpResponse {
     let user = match sqlx::query_as!(
         User,
