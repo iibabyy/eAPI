@@ -1,7 +1,7 @@
-mod routes;
-mod utils;
 mod database;
+mod routes;
 mod user;
+mod utils;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
@@ -11,10 +11,8 @@ use utils::app_state::AppState;
 
 type ActixResult<T> = Result<T, actix_web::Error>;
 
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     // std::env::set_var("RUST_LOG", "actix_web=info");
     dotenv::dotenv().ok();
     std::env::set_var("RUST_LOG", "debug");
@@ -33,9 +31,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-        .app_data(web::Data::new( AppState { db: pool.clone() } ))
-        .wrap(Logger::new("%a %r %s"))
-        .configure(routes::home_routes::config)
+            .app_data(web::Data::new(AppState { db: pool.clone() }))
+            .wrap(Logger::new("%a %r %s"))
+            .configure(routes::home_routes::config)
     })
     .bind((addr, port))?
     .run()

@@ -1,8 +1,8 @@
 services:
-  # backend:
-  #   build: backend
-  #   container_name: backend
-  #   env_file: backend/srcs/.env
+  backend:
+    build: backend
+    container_name: backend
+    env_file: backend/srcs/.env
 
   db:
     image: postgres:15
@@ -24,8 +24,6 @@ services:
 networks:
   app-network:
     driver: bridge
-
-
 
 ##    VOLUMES    ##
 
