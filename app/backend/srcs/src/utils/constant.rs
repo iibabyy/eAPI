@@ -9,6 +9,7 @@ lazy_static!{
 	pub static ref DB_ADDR:			String	= set_addr();
 	pub static ref DB_PORT:			u16		= set_port();
 	pub static ref DATABASE_URL:	String	= set_database_url();
+	pub static ref HASH_SECRET:	String	= set_hash_secret();
 }
 
 fn set_listen() -> u16 {
@@ -49,9 +50,15 @@ fn set_db_password() -> String {
 	dotenv::dotenv().ok();
 	env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD: invalid environment variable")
 }
+
 fn set_db_name() -> String {
 	dotenv::dotenv().ok();
 	env::var("POSTGRES_DB").expect("POSTGRES_DB: invalid environment variable")
+}
+
+fn set_hash_secret() -> String {
+	dotenv::dotenv().ok();
+	env::var("HASH_SECRET").expect("HASH_SECRET: invalid environment variable")
 }
 
 fn set_database_url() -> String {

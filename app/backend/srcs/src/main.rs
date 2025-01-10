@@ -1,11 +1,9 @@
 mod routes;
 mod utils;
 mod database;
-mod user;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
-use tokio_postgres::NoTls;
 use utils::app_state::AppState;
 // use utils::database::MyDatabase;
 
@@ -34,7 +32,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
         .app_data(web::Data::new( AppState { db: pool.clone() } ))
         .wrap(Logger::new("%a %r %s"))
-        .configure(routes::home_routes::config)
+        .configure(routes::config)
     })
     .bind(("localhost", port))?
     .run()
