@@ -7,8 +7,6 @@ use sqlx::postgres::PgPoolOptions;
 use utils::app_state::AppState;
 // use utils::database::MyDatabase;
 
-type ActixResult<T> = Result<T, actix_web::Error>;
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

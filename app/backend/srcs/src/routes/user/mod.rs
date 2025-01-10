@@ -1,13 +1,7 @@
-use actix_web::{get, post, web::{self, Json, Query}, HttpRequest, HttpResponse};
+use actix_web::{get, post, web::{self, Json}, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
-use crate::utils::app_state::AppState;
+use crate::{utils::app_state::AppState};
 
-enum Fields {
-    Id(i32),
-    Username(String),
-    Email(String),
-    Sold(i32),
-}
 
 /* --- --------------- */
 /* --- [ STRUCTS ] --- */
@@ -40,13 +34,18 @@ pub struct AddSoldBody {
     pub sold: i32,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct UserOrdersData {
+    pub id: i32,
+    pub product_id: i32,
+}
 
 /* --- -------------- */
 /* --- [ ROUTES ] --- */
 /* --- -------------- */
 
 #[get("/get_by_id")]
-async fn user_get_by_id(
+async fn get_by_id(
     request: HttpRequest,
     data: web::Data<AppState>
 ) -> HttpResponse {
@@ -55,7 +54,7 @@ async fn user_get_by_id(
         Err(err) => return HttpResponse::BadRequest().body(format!("invalid query parameters: {err}"))
     };
 
-    if id < 1 { return HttpResponse::BadRequest().body("invalid query parameters: expected id") }
+    if id < 1 { return HttpResponse::BadRequest().body("invalid query parameters") }
 
     match sqlx::query_as!(
         NoPasswordUser,
@@ -81,7 +80,7 @@ async fn user_get_by_id(
 
 
 #[post("/create")]
-async fn user_create(
+async fn create(
     body: web::Json<CreateUserBody>, 
     data: web::Data<AppState>
 ) -> HttpResponse {
@@ -117,7 +116,7 @@ async fn user_create(
 }
 
 #[post("/delete")]
-async fn user_delete(
+async fn delete(
     body: web::Json<i32>, 
     data: web::Data<AppState>
 ) -> HttpResponse {
@@ -144,7 +143,7 @@ async fn user_delete(
 
 
 #[get("/get_all")]
-async fn user_get_all(
+async fn get_all(
     data: web::Data<AppState>
 ) -> HttpResponse {
 
@@ -168,7 +167,7 @@ async fn user_get_all(
 }
 
 #[post("/add_sold")]
-async fn user_add_sold(
+async fn add_sold(
     body: Json<AddSoldBody>,
     data: web::Data<AppState>
 ) -> HttpResponse {
@@ -195,6 +194,37 @@ async fn user_add_sold(
     )
     .fetch_one(&data.db).await {
         Ok(user) => HttpResponse::Ok().json(user),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
+    }
+
+}
+
+#[get("/get_order_by_id")]
+async fn get_order_by_id(
+    request: HttpRequest,
+    data: web::Data<AppState>,
+) -> HttpResponse {
+
+    let id = match request.query_string().parse::<i32>() {
+        Ok(id) => id,
+        Err(err) => return HttpResponse::BadRequest().body(format!("{err}")),
+    };
+
+    match sqlx::query_as!(
+        UserOrdersData,
+        r#"
+        SELECT
+            id,
+            product_id
+        FROM
+            orders
+        WHERE
+            user_id = $1
+        "#,
+        id,
+    )
+    .fetch_all(&data.db).await {
+        Ok(orders) => HttpResponse::Ok().json(orders),
         Err(e) => HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
     }
 

@@ -1,6 +1,7 @@
 mod user;
-mod products;
+mod product;
 mod root;
+mod order;
 
 use actix_web::web;
 
@@ -11,7 +12,8 @@ pub fn config(config: &mut web::ServiceConfig) {
 	
 	config
 		.configure(user_config)
-		.configure(products_config);
+		.configure(products_config)
+		.configure(order_config);
 }
 
 
@@ -19,20 +21,29 @@ pub fn config(config: &mut web::ServiceConfig) {
 pub fn user_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/user")
-			.service(user::user_create)
-			.service(user::user_get_by_id)
-			.service(user::user_get_all)
-			.service(user::user_delete)
-			.service(user::user_add_sold)
+			.service(user::create)
+			.service(user::get_by_id)
+			.service(user::get_all)
+			.service(user::delete)
+			.service(user::add_sold)
 		);
 }
 
 #[allow(dead_code)]
 pub fn products_config(config: &mut web::ServiceConfig) {
 	config
-		.service(web::scope("/user")
-			.service(products::product_create)
-			.service(products::products_get_by_id)
+		.service(web::scope("/product")
+			.service(product::create)
+			.service(product::get_by_id)
+		);
+}
+
+#[allow(dead_code)]
+pub fn order_config(config: &mut web::ServiceConfig) {
+	config
+		.service(web::scope("/order")
+			.service(order::get_by_id)
+			.service(order::create)
 		);
 }
 
