@@ -21,6 +21,9 @@ pub fn user_config(config: &mut web::ServiceConfig) {
 		.service(web::scope("/user")
 			.service(user::user_create)
 			.service(user::user_get_by_id)
+			.service(user::user_get_all)
+			.service(user::user_delete)
+			.service(user::user_add_sold)
 		);
 }
 

@@ -1,6 +1,13 @@
-use actix_web::{get, post, web::{self, Query}, HttpRequest, HttpResponse};
+use actix_web::{get, post, web::{self, Json, Query}, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 use crate::utils::app_state::AppState;
+
+enum Fields {
+    Id(i32),
+    Username(String),
+    Email(String),
+    Sold(i32),
+}
 
 /* --- --------------- */
 /* --- [ STRUCTS ] --- */
@@ -11,6 +18,7 @@ pub struct NoPasswordUser {
     pub id: i32,
 	pub username: String,
     pub email: String,
+    pub sold: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -24,6 +32,12 @@ pub struct CreateUserBody {
 pub struct LoginUserBody {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AddSoldBody {
+    pub id: i32,
+    pub sold: i32,
 }
 
 
@@ -49,7 +63,8 @@ async fn user_get_by_id(
         SELECT
             id,
             username,
-            email
+            email,
+            sold
         FROM
             "users"
         WHERE
@@ -67,11 +82,9 @@ async fn user_get_by_id(
 
 #[post("/create")]
 async fn user_create(
-    body: web::Json<CreateUserBody>,
+    body: web::Json<CreateUserBody>, 
     data: web::Data<AppState>
 ) -> HttpResponse {
-
-
 
     match sqlx::query_as!(
         NoPasswordUser,
@@ -79,15 +92,17 @@ async fn user_create(
         INSERT INTO users (
             username,
             email,
-            password
+            password,
+            sold
         )
         VALUES (
             $1,
             $2,
-            $3
+            $3,
+            0
         )
         RETURNING
-            id, username, email
+            id, username, email, sold
         "#,
         body.username,
         body.email,
@@ -98,4 +113,89 @@ async fn user_create(
         Ok(user) => HttpResponse::Ok().json(user),
         Err(e) => HttpResponse::InternalServerError().body(format!("Database error: {e}"))
     }
+
+}
+
+#[post("/delete")]
+async fn user_delete(
+    body: web::Json<i32>, 
+    data: web::Data<AppState>
+) -> HttpResponse {
+
+    match sqlx::query_as!(
+        NoPasswordUser,
+        r#"
+        DELETE FROM
+            users
+        WHERE
+            id = $1
+        RETURNING
+            id, username, email, sold
+        "#,
+        body.into_inner(),
+    )
+    .fetch_one(&data.db)
+    .await {
+        Ok(user) => HttpResponse::Ok().body(format!("user {} deleted.", user.username)),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Database error: {e}"))
+    }
+
+}
+
+
+#[get("/get_all")]
+async fn user_get_all(
+    data: web::Data<AppState>
+) -> HttpResponse {
+
+    match sqlx::query_as!(
+        NoPasswordUser,
+        r#"
+        SELECT
+            id,
+            username,
+            email,
+            sold
+        FROM
+            "users"
+        "#,
+    )
+    .fetch_all(&data.db).await {
+        Ok(user) => HttpResponse::Ok().json(user),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
+    }
+
+}
+
+#[post("/add_sold")]
+async fn user_add_sold(
+    body: Json<AddSoldBody>,
+    data: web::Data<AppState>
+) -> HttpResponse {
+    let id = body.id;
+    let sold = body.sold;
+
+    if id < 1 { return HttpResponse::BadRequest().body("invalid parameters: id") }
+    if sold < 1 { return HttpResponse::BadRequest().body("invalid parameters: sold: not positive") }
+
+    match sqlx::query_as!(
+        NoPasswordUser,
+        r#"
+        UPDATE
+            "users"
+        SET
+            sold = sold + $2
+        WHERE
+            id = $1
+        RETURNING
+            id, username, email, sold
+        "#,
+        id,
+        sold,
+    )
+    .fetch_one(&data.db).await {
+        Ok(user) => HttpResponse::Ok().json(user),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Erreur DB: {e}"))
+    }
+
 }
