@@ -1,15 +1,15 @@
 all:
 	make -s all_docker
-	make -s all_database
-	make -s all_backend
+# make -s all_database
+# make -s all_backend
 
 clean:
 	make -s clean_backend
 
 fclean:
 	make -s fclean_backend
-	make -s fclean_database
 	make -s fclean_docker
+# make -s fclean_database
 
 all_backend: backend_run
 clean_backend: backend_clean
@@ -36,8 +36,11 @@ backend_run: $(BACKEND_BIN)
 backend_debug_run: $(BACKEND_DEBUG_BIN)
 	cargo run $(BACKEND_MANIFEST_PATH)
 
-backen_build: $(BACKEND_BIN)
-backen_debug_build: $(BACKEND_DEBUG_BIN)
+backend_build:
+	cargo build --release $(BACKEND_MANIFEST_PATH)
+
+backend_debug_build:
+	cargo build $(BACKEND_MANIFEST_PATH)
 
 $(BACKEND_BIN):
 	cargo build --release $(BACKEND_MANIFEST_PATH)
@@ -46,23 +49,23 @@ $(BACKEND_DEBUG_BIN):
 	cargo build $(BACKEND_MANIFEST_PATH)
 
 backend_clean:
-	mv $(BACKEND_BIN) .
+	mv $(BACKEND_BIN) $(BACKEND_PATH)
 	cargo clean $(BACKEND_MANIFEST_PATH)
 	mkdir -p $(BACKEND_PATH)/target/release
-	mv $(PROJECT_NAME) $(BACKEND_PATH)/target/release/
+	mv $(BACKEND_PATH)/$(PROJECT_NAME) $(BACKEND_PATH)/target/release/
 
 backend_debug_clean:
-	mv $(BACKEND_DEBUG_BIN) .
+	mv $(BACKEND_DEBUG_BIN) $(BACKEND_PATH)
 	cargo clean $(BACKEND_MANIFEST_PATH)
 	mkdir -p $(BACKEND_PATH)/target/debug
-	mv $(PROJECT_NAME) $(BACKEND_PATH)/target/debug/
+	mv $(BACKEND_PATH)/$(PROJECT_NAME) $(BACKEND_PATH)/target/debug/
 
 backend_fclean:
 	cargo clean $(BACKEND_MANIFEST_PATH)
 
 ###		DATABASE	###
 
-MIGRATION_PATH = app/migrations
+MIGRATION_PATH = app/backend/migrations
 
 migration_run:
 	sqlx migrate run --source $(MIGRATION_PATH)
@@ -72,7 +75,7 @@ migration_revert:
 
 ###		DOCKER		###
 
-docker_up: #volume_up
+docker: #volume_up
 	docker compose -f app/docker-compose.yml up --build
 
 docker_down:

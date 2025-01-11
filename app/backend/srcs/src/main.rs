@@ -31,6 +31,13 @@ async fn main() -> std::io::Result<()> {
         .app_data(web::Data::new( AppState { db: pool.clone() } ))
         .wrap(Logger::new("%a %r %s"))
         .configure(routes::config)
+        .wrap(
+            Cors::default()
+                .allowed_origin("http://frontend")
+                .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                .allowed_headers(vec![http::header::AUTHORIZATION, http::header::CONTENT_TYPE])
+                .max_age(3600),
+        )
     })
     .bind(("localhost", port))?
     .run()

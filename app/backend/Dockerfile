@@ -1,10 +1,14 @@
 FROM rust:bullseye
 
-RUN apt update -y
-RUN apt upgrade -y
+RUN apt update -y \
+&& apt upgrade -y
 
-COPY ./srcs /app/myapp
+RUN cargo install cargo-watch \
+	&& cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
-WORKDIR /app/myapp
+COPY ./srcs /app
+COPY migrations /var/lib/migrations
+COPY ./backend_entrypoint.sh /backend_entrypoint.sh
+RUN chmod +x /backend_entrypoint.sh
 
-CMD [ "cargo", "run" ]
+CMD [ "bash", "/backend_entrypoint.sh" ]

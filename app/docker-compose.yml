@@ -1,8 +1,26 @@
 services:
-  # backend:
-  #   build: backend
-  #   container_name: backend
-  #   env_file: backend/srcs/.env
+  backend:
+    build: ./backend
+    container_name: backend
+    depends_on:
+      - db
+    env_file: ../.env
+    networks:
+      - app-network
+    ports:
+      - 2000:80
+    volumes:
+      - backend:/app
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - 5173:5173
+    volumes:
+      - frontend:/app
+    networks:
+      - app-network
 
   db:
     image: postgres:15
@@ -11,12 +29,10 @@ services:
       - POSTGRES_DB=myapp
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-    ports:
-      - "5432:5432"
     volumes:
       - database:/var/lib/postgresql/data
-    # networks:
-    #   - app-network
+    networks:
+      - app-network
 
 
 ##    NETWORKS    ##
@@ -36,3 +52,18 @@ volumes:
     #   type: 'none'
     #   o: 'bind'
     #   device: /lib/myapp/data
+
+  frontend:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ./frontend/srcs
+  
+
+  backend:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ./backend/srcs
