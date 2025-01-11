@@ -31,3 +31,8 @@ networks:
 
 volumes:
   database: {}
+    # driver: local
+    # driver_opts:
+    #   type: 'none'
+    #   o: 'bind'
+    #   device: /lib/myapp/data
