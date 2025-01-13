@@ -2,11 +2,11 @@ mod routes;
 mod utils;
 mod database;
 
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_cors::Cors;
+use actix_web::{http, middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
 use utils::app_state::AppState;
 // use utils::database::MyDatabase;
-
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to create pool");
 
-    HttpServer::new(move || {
+    match HttpServer::new(move || {
         App::new()
         .app_data(web::Data::new( AppState { db: pool.clone() } ))
         .wrap(Logger::new("%a %r %s"))
@@ -39,7 +39,12 @@ async fn main() -> std::io::Result<()> {
                 .max_age(3600),
         )
     })
-    .bind(("localhost", port))?
-    .run()
+    .bind(("localhost", port)) {
+        Ok(nimp) => nimp,
+        Err(err) => {
+            eprintln!("bind: {err}");
+            return Err(err)
+        }
+    }.run()
     .await
 }

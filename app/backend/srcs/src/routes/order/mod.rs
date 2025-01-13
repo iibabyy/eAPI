@@ -21,6 +21,19 @@ pub struct CreateOrderBody {
 }
 
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OrderDetails {
+    pub id: i32,
+    pub delivery_address: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct CreateDetailsBody {
+	pub order_id: i32,
+    pub delivery_address: String,
+}
+
+
 /* ------------------ */
 /* --- [ ROUTES ] --- */
 /* ------------------ */
@@ -83,7 +96,52 @@ async fn create(
 	)
 	.fetch_one(&data.db).await {
 		Ok(order) => HttpResponse::Ok().json(order),
-		Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+		Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
 	}
+
+}
+
+#[post("/create_details")]
+async fn create_details(
+	body: Json<CreateDetailsBody>,
+	data: web::Data<AppState>
+) -> HttpResponse {
+
+	let details = match sqlx::query_as!(
+		OrderDetails,
+		r#"
+		INSERT INTO order_details (
+			delivery_address
+		)
+		VALUES (
+			$1
+		)
+		RETURNING
+			id, delivery_address
+		"#,
+		body.delivery_address,
+	)
+	.fetch_one(&data.db).await {
+		Ok(details) => details,
+		Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
+	};
+
+	match sqlx::query!(
+		r#"
+		UPDATE
+			orders
+		SET
+			order_details_id = $1
+		WHERE
+			id = $2
+		"#,
+		details.id,
+		body.order_id,
+	)
+	.execute(&data.db).await {
+		Ok(_) => HttpResponse::Ok().json(details),
+		Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+	}
+
 
 }

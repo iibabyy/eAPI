@@ -12,15 +12,17 @@ use crate::utils::app_state::AppState;
 pub struct Product {
     pub id: i32,
 	pub name: String,
+	pub description: Option<String>,
     pub price: i32,
-    pub owner_id: i32,
+    pub user_id: i32,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct CreateProductBody {
 	pub name: String,
     pub price: i32,
-    pub owner_id: i32,
+	pub description: Option<String>,
+    pub user_id: i32,
 }
 
 
@@ -46,7 +48,8 @@ async fn get_by_id(
 			id,
 			name,
 			price,
-			owner_id
+			description,
+			user_id
 		FROM
 			"products"
 		WHERE
@@ -74,19 +77,22 @@ async fn create(
 		INSERT INTO "products" (
 			name,
 			price,
-			owner_id
+			user_id,
+			description
 		)
 		VALUES (
 			$1,
 			$2,
-			$3
+			$3,
+			$4
 		)
 		RETURNING
-			id, name, price, owner_id
+			id, name, price, user_id, description
 		"#,
 		body.name,
 		body.price,
-		body.owner_id,
+		body.user_id,
+		body.description,
 	)
 	.fetch_one(&data.db).await {
 		Ok(product) => HttpResponse::Ok().json(product),

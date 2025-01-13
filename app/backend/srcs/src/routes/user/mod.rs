@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::{utils::app_state::AppState};
 
 
-/* --- --------------- */
-/* --- [ STRUCTS ] --- */
-/* --- --------------- */
+/* ------------------ */
+/* --- [ MODELS ] --- */
+/* ------------------ */
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct NoPasswordUser {
@@ -157,6 +157,7 @@ async fn get_all(
             sold
         FROM
             "users"
+        ORDER BY username DESC
         "#,
     )
     .fetch_all(&data.db).await {

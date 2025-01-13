@@ -44,6 +44,7 @@ pub fn order_config(config: &mut web::ServiceConfig) {
 		.service(web::scope("/order")
 			.service(order::get_by_id)
 			.service(order::create)
+			.service(order::create_details)
 		);
 }
 

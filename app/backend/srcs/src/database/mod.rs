@@ -3,4 +3,4 @@ pub mod db;
 
 
 
-pub type PostgresResult<T> = Result<T, tokio_postgres::Error>;
+// pub type PostgresResult<T> = Result<T, tokio_postgres::Error>;

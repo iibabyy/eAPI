@@ -15,4 +15,4 @@ COPY srcs/ .
 EXPOSE 5173
 
 # Construire l'application avec Vite
-CMD ["npm", "run", "dev"]
+# CMD ["npm", "run", "dev"]
