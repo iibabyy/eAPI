@@ -1,12 +1,15 @@
 mod routes;
 mod utils;
+mod impls;
+mod models;
 mod database;
 
 use actix_cors::Cors;
-use actix_web::{http, middleware::Logger, web, App, HttpServer};
+use actix_web::{http, middleware::Logger, web, App, HttpResponse, HttpServer};
 use sqlx::postgres::PgPoolOptions;
 use utils::app_state::AppState;
 // use utils::database::MyDatabase;
+type HttpResult<T> = Result<T, HttpResponse>;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -16,16 +16,15 @@ pub fn config(config: &mut web::ServiceConfig) {
 		.configure(order_config);
 }
 
-
 #[allow(dead_code)]
 pub fn user_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/user")
-			.service(user::create)
-			.service(user::get_by_id)
-			.service(user::get_all)
-			.service(user::delete)
-			.service(user::add_sold)
+			.service(user::root::create)
+			.service(user::root::get_by_id)
+			.service(user::root::get_all)
+			.service(user::root::delete)
+			.service(user::root::add_sold)
 		);
 }
 
@@ -33,8 +32,8 @@ pub fn user_config(config: &mut web::ServiceConfig) {
 pub fn products_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/product")
-			.service(product::create)
-			.service(product::get_by_id)
+			.service(product::root::create)
+			.service(product::root::get_by_id)
 		);
 }
 
@@ -42,9 +41,9 @@ pub fn products_config(config: &mut web::ServiceConfig) {
 pub fn order_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/order")
-			.service(order::get_by_id)
-			.service(order::create)
-			.service(order::create_details)
+			.service(order::root::get_by_id)
+			.service(order::root::create)
+			.service(order::root::create_details)
 		);
 }
 

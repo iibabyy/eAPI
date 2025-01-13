@@ -1,6 +1,6 @@
 -- Add up migration script here
 CREATE TABLE IF NOT EXISTS "order_details" (
-	"id" SERIAL PRIMARY KEY,
+	"order_details_id" SERIAL PRIMARY KEY,
 	"delivery_address" VARCHAR(255) NOT NULL,
 	"created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP

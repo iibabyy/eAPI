@@ -1,14 +1,14 @@
 -- Add up migration script here
 CREATE TABLE IF NOT EXISTS "orders" (
-	"id" SERIAL PRIMARY KEY,
+	"order_id" SERIAL PRIMARY KEY,
 	"user_id" INTEGER NOT NULL,
 	"product_id" INTEGER NOT NULL,
 	"order_details_id" INTEGER UNIQUE,
 	"created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY ("user_id") REFERENCES users(id) ON DELETE CASCADE,
-	FOREIGN KEY ("product_id") REFERENCES products(id),
-	FOREIGN KEY ("order_details_id") REFERENCES order_details(id)
+	FOREIGN KEY ("user_id") REFERENCES users(user_id) ON DELETE CASCADE,
+	FOREIGN KEY ("product_id") REFERENCES products(product_id),
+FOREIGN KEY ("order_details_id") REFERENCES order_details(order_details_id)
 );
 
 
