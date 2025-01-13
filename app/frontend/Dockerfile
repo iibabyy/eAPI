@@ -1,18 +1,13 @@
-# Étape 1 : Construction de l'application
-FROM node:18
+FROM node:18-slim
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de package et installer les dépendances
-COPY srcs/package*.json ./
+COPY requirements/package*.json /app/
 
-RUN npm install
+RUN npm install --force
 
-# Copier le reste des fichiers de l'application
-COPY srcs/ .
+COPY requirements /app
 
-EXPOSE 5173
+EXPOSE 3000
 
-# Construire l'application avec Vite
-# CMD ["npm", "run", "dev"]
+CMD [ "npm", "run", "dev" ]
