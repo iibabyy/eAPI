@@ -1,11 +1,35 @@
 "use client";
 import React, {useState, useEffect} from "react";
+import {BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SignUp from "./SignUp";
 
 interface User {
 	id: number,
 	email: string,
 	username: string,
 	sold: number,
+}
+
+const App: React.FC = () => {
+	return (
+		<Router>
+			<div className="App">
+				<Routes>
+				{/* Route pour le formulaire de signup */}
+				<Route
+					path="/signup"
+					element={<SignUp />}
+				/>
+				
+				{/* Autres routes si nécessaires */}
+				<Route
+					path="/"
+					element={<Home />}
+				/>
+				</Routes>
+			</div>
+		</Router>
+	)
 }
 
 export default function Home() {
@@ -22,7 +46,6 @@ export default function Home() {
 
 			const data = await response.json();
 			// console.log("received :\n", data);
-			let i = 32;
 
 			DeserializeUser(data);
 
