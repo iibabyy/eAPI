@@ -14,3 +14,4 @@ deadpool-postgres = "0.14.1"
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres"] }
 actix-cors = "0.7.0"
 jsonwebtoken = "9.3.0"
+bcrypt = "0.16.0"

@@ -1,5 +1,4 @@
-use actix_web::{delete, get, post, web::{self, Json, Query}, HttpRequest, HttpResponse};
-use sqlx::query_as;
+use actix_web::{delete, get, post, web::{self, Json, Query}, HttpResponse};
 
 use crate::{impls::product::{create_product, delete_product, get_product}, models::product::*, utils::app_state::AppState};
 
@@ -21,7 +20,7 @@ async fn get(
 
 	match get_product(body.product_id, &data.db).await {
 		Ok(product) => HttpResponse::Ok().json(product),
-		Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+		Err(err) => err,
 	}
 }
 
@@ -39,7 +38,7 @@ async fn create(
 			&data.db
 		).await {
 		Ok(product) => HttpResponse::Ok().json(product),
-		Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+		Err(err) => err,
 	}
 }
 
@@ -54,6 +53,6 @@ async fn delete(
 			&data.db
 		).await {
 		Ok(product) => HttpResponse::Ok().json(product),
-		Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+		Err(err) => err,
 	}
 }

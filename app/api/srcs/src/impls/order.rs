@@ -1,13 +1,13 @@
-use actix_web::web::{self, Json};
+use actix_web::{web::Json, HttpResponse};
 use sqlx::{self, Pool, Postgres};
 
-use crate::{models::order::{CreateOrderDetailsModel, CreateOrderModel, Order, OrderDetails, OrderDetailsIdModel}, utils::app_state::AppState};
+use crate::models::order::{CreateOrderDetailsModel, CreateOrderModel, Order, OrderDetails};
 
 pub async fn get_order(
 	order_id: i32,
 	db: &Pool<Postgres>,
-) -> Result<Order, sqlx::Error> {
-	sqlx::query_as!(
+) -> Result<Order, HttpResponse> {
+	match sqlx::query_as!(
 		Order,
 		r#"
 		SELECT
@@ -22,13 +22,16 @@ pub async fn get_order(
 		"#,
 		order_id,
 	)
-	.fetch_one(db).await
+	.fetch_one(db).await {
+		Ok(order) => Ok(order),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn create_order(
 	order: Json<CreateOrderModel>,
 	db: &Pool<Postgres>,
-) -> Result<Order, sqlx::Error> {
+) -> Result<Order, HttpResponse> {
 
 	let order = match sqlx::query_as!(
 		Order,
@@ -49,7 +52,7 @@ pub async fn create_order(
 	)
 	.fetch_one(db).await {
 		Ok(order) => order,
-		Err(err) => return Err(err),
+		Err(err) => return Err(HttpResponse::from_error(err)),
 	};
 
 	Ok(order)
@@ -58,8 +61,8 @@ pub async fn create_order(
 async fn new_order_details(
 	infos: CreateOrderDetailsModel,
 	db: &Pool<Postgres>,
-) -> Result<OrderDetails, sqlx::Error> {
-	sqlx::query_as!(
+) -> Result<OrderDetails, HttpResponse> {
+	match sqlx::query_as!(
 		OrderDetails,
 		r#"
 		INSERT INTO order_details (
@@ -73,20 +76,23 @@ async fn new_order_details(
 		"#,
 		infos.delivery_address,
 	)
-	.fetch_one(db).await
+	.fetch_one(db).await {
+		Ok(details) => details,
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn create_order_details(
 	infos: CreateOrderDetailsModel,
 	db: &Pool<Postgres>,
-) -> Result<OrderDetails, sqlx::Error> {
+) -> Result<OrderDetails, HttpResponse> {
 	let order = get_order(infos.order_id, db).await?;
 	
 	let order_details = 
 	if order.order_details_id.is_some() {
 
 		// modify details infos if one exists
-		sqlx::query_as!(
+		match sqlx::query_as!(
 			OrderDetails,
 			r#"
 			UPDATE
@@ -101,11 +107,14 @@ pub async fn create_order_details(
 			infos.delivery_address,
 			order.order_details_id.unwrap(),
 		)
-		.fetch_one(db).await?
+		.fetch_one(db).await {
+			Ok(details) => details,
+			Err(err) => return Err(HttpResponse::from_error(err)),
+		}
 	} else {
 
 		// create order_details in database
-		let details = sqlx::query_as!(
+		let details = match sqlx::query_as!(
 			OrderDetails,
 			r#"
 			INSERT INTO order_details (
@@ -119,10 +128,13 @@ pub async fn create_order_details(
 			"#,
 			infos.delivery_address,
 		)
-		.fetch_one(db).await?;
+		.fetch_one(db).await {
+			Ok(details) => details,
+			Err(err) => return Err(HttpResponse::from_error(err)),
+		};
 
 		// assign it to the order
-		sqlx::query!(
+		match sqlx::query!(
 			r#"
 			UPDATE
 				orders
@@ -134,7 +146,10 @@ pub async fn create_order_details(
 			details.order_details_id,
 			order.order_id,
 		)
-		.execute(db).await?;
+		.execute(db).await {
+			Ok(_) => (),
+			Err(err) => return Err(HttpResponse::from_error(err)),
+		};
 
 		details
 	};

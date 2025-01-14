@@ -1,14 +1,15 @@
-use actix_web::{web::{self, Json}, HttpResponse};
+use actix_web::HttpResponse;
+use bcrypt::{hash, DEFAULT_COST};
 use sqlx::{Pool, Postgres};
 
-use crate::{models::user::{NoPasswordUser, UserIdModel}, utils::app_state::AppState};
+use crate::models::user::NoPasswordUser;
 
 pub async fn get_user(
 	id: i32,
 	db: &Pool<Postgres>,
-) -> Result<NoPasswordUser, sqlx::Error> {
+) -> Result<NoPasswordUser, HttpResponse> {
 	
-	let user = sqlx::query_as!(
+	let user = match sqlx::query_as!(
 		NoPasswordUser,
 		r#"
 		SELECT
@@ -23,7 +24,10 @@ pub async fn get_user(
 		"#,
 		id,
 	)
-	.fetch_one(db).await?;
+	.fetch_one(db).await {
+		Ok(user) => user,
+		Err(err) => return Err(HttpResponse::from_error(err))
+	};
 
 	Ok(user)
 }
@@ -33,8 +37,13 @@ pub async fn create_user(
 	email: &String,
 	password: &String,
 	db: &Pool<Postgres>,
-) -> Result<NoPasswordUser, sqlx::Error> {
-	let user = sqlx::query_as!(
+) -> Result<NoPasswordUser, HttpResponse> {
+	let password = match hash(password, DEFAULT_COST) {
+		Ok(hash) => hash,
+		Err(err) => return Err(HttpResponse::InternalServerError().body(format!("failed to hash password: {}", err.to_string()))),
+	};
+
+	let user = match sqlx::query_as!(
 		NoPasswordUser,
 		r#"
 		INSERT INTO users (
@@ -54,7 +63,10 @@ pub async fn create_user(
 		email,
 		password,
 	)
-	.fetch_one(db).await?;
+	.fetch_one(db).await {
+		Ok(user) => user,
+		Err(err) => return Err(HttpResponse::from_error(err)),
+	};
 
 	Ok(user)
 }
@@ -62,8 +74,8 @@ pub async fn create_user(
 pub async fn delete_user(
 	user_id: i32,
 	db: &Pool<Postgres>,
-) -> Result<(), sqlx::Error> {
-	sqlx::query!(
+) -> Result<(), HttpResponse> {
+	match sqlx::query!(
 		r#"
 		DELETE FROM
 			users
@@ -72,15 +84,16 @@ pub async fn delete_user(
 		"#,
 		user_id,
 	)
-	.execute(db).await?;
-
-	Ok(())
+	.execute(db).await {
+		Ok(_) => Ok(()),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn get_all_users(
 	db: &Pool<Postgres>,
-) -> Result<Vec<NoPasswordUser>, sqlx::Error> {
-	sqlx::query_as!(
+) -> Result<Vec<NoPasswordUser>, HttpResponse> {
+	match sqlx::query_as!(
 		NoPasswordUser,
 		r#"
 		SELECT
@@ -94,16 +107,19 @@ pub async fn get_all_users(
 		LIMIT 100
 		"#
 	)
-	.fetch_all(db).await
+	.fetch_all(db).await {
+		Ok(users) => Ok(users),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn add_sold_to_user(
 	user_id: i32,
 	sold_to_add: i32,
 	db: &Pool<Postgres>,
-) -> Result<NoPasswordUser, sqlx::Error> {
+) -> Result<NoPasswordUser, HttpResponse> {
 
-	if sold_to_add < 1 { return Err(sqlx::Error::WorkerCrashed) }	// wrong error type
+	if sold_to_add < 1 { return Err(HttpResponse::BadRequest().body("sold to add can not be negative neither null")) }
 
 	let user = match sqlx::query_as!(
         NoPasswordUser,
@@ -122,7 +138,7 @@ pub async fn add_sold_to_user(
     )
     .fetch_one(db).await {
         Ok(user) => user,
-        Err(err) => return Err(err),
+        Err(err) => return Err(HttpResponse::from_error(err)),
     };
 
 	Ok(user)

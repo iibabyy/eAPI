@@ -2,7 +2,7 @@
 /* --- [ STRUCTS ] --- */
 /* ------------------- */
 
-use actix_web::{body, get, post, web::{self, Json, Query}, HttpRequest, HttpResponse};
+use actix_web::{get, post, web::{self, Json, Query}, HttpResponse};
 use crate::{impls::order::{create_order, create_order_details, get_order}, models::order::*, utils::app_state::AppState};
 
 /* ------------------ */
@@ -17,7 +17,7 @@ async fn get_by_id(
 
 	match get_order(infos.order_id, &data.db).await {
 		Ok(order) => HttpResponse::Ok().json(order),
-		Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+		Err(err) => err,
 	}
 
 }
@@ -29,7 +29,7 @@ async fn create(
 ) -> HttpResponse {
 	match create_order(body, &data.db).await {
 		Ok(order) => HttpResponse::Ok().json(order),
-		Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+		Err(err) => err,
 	}
 }
 
@@ -41,7 +41,7 @@ async fn create_details(
 
 	let order_details = match create_order_details(body.into_inner(), &data.db).await {
 		Ok(order_details) => order_details,
-		Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
+		Err(err) => return err,
 	};
 
 	HttpResponse::Ok().json(order_details)

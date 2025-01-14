@@ -1,3 +1,4 @@
+use actix_web::HttpResponse;
 use sqlx::{Pool, Postgres};
 
 use crate::models::product::Product;
@@ -5,8 +6,8 @@ use crate::models::product::Product;
 pub async fn get_product(
 	product_id: i32,
 	db: &Pool<Postgres>,
-) -> Result<Product, sqlx::Error> {
-	sqlx::query_as!(
+) -> Result<Product, HttpResponse> {
+	match sqlx::query_as!(
 		Product,
 		r#"
 		SELECT
@@ -22,7 +23,10 @@ pub async fn get_product(
 		"#,
 		product_id,
 	)
-	.fetch_one(db).await
+	.fetch_one(db).await {
+		Ok(product) => Ok(product),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn create_product(
@@ -31,8 +35,8 @@ pub async fn create_product(
 	user_id: &i32,
 	description: Option<&String>,
 	db: &Pool<Postgres>,
-) -> Result<Product, sqlx::Error> {
-	sqlx::query_as!(
+) -> Result<Product, HttpResponse> {
+	match sqlx::query_as!(
 		Product,
 		r#"
 		INSERT INTO "products" (
@@ -55,14 +59,17 @@ pub async fn create_product(
 		user_id,
 		description,
 	)
-	.fetch_one(db).await
+	.fetch_one(db).await {
+		Ok(product) => Ok(product),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }
 
 pub async fn delete_product(
 	product_id: i32,
 	db: &Pool<Postgres>,
-) -> Result<(), sqlx::Error> {
-	sqlx::query!(
+) -> Result<(), HttpResponse> {
+	match sqlx::query!(
 		r#"
 		DELETE FROM
 			products
@@ -71,7 +78,8 @@ pub async fn delete_product(
 		"#,
 		product_id,
 	)
-	.execute(db).await?;
-
-	Ok(())
+	.execute(db).await {
+		Ok(_) => Ok(()),
+		Err(err) => Err(HttpResponse::from_error(err)),
+	}
 }

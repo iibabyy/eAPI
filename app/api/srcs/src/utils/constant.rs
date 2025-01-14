@@ -9,7 +9,7 @@ lazy_static!{
 	pub static ref DB_ADDR:			String	= set_addr();
 	pub static ref DB_PORT:			u16		= set_port();
 	pub static ref DATABASE_URL:	String	= set_database_url();
-	pub static ref HASH_SECRET:	String	= set_hash_secret();
+	pub static ref HASH_SECRET:		String	= set_hash_secret();
 }
 
 fn set_listen() -> u16 {
