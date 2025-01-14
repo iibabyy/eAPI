@@ -5,11 +5,9 @@ mod models;
 mod database;
 
 use actix_cors::Cors;
-use actix_web::{http, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::{http, middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
 use utils::app_state::AppState;
-// use utils::database::MyDatabase;
-type HttpResult<T> = Result<T, HttpResponse>;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -37,13 +35,14 @@ async fn main() -> std::io::Result<()> {
         .wrap(
             Cors::default()
                 .allowed_origin("http://frontend")
+                .allowed_origin("http://localhost")
                 .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
                 .allowed_headers(vec![http::header::AUTHORIZATION, http::header::CONTENT_TYPE])
                 .max_age(3600),
         )
     })
     .bind(("localhost", port)) {
-        Ok(nimp) => nimp,
+        Ok(serv) => serv,
         Err(err) => {
             eprintln!("bind: {err}");
             return Err(err)

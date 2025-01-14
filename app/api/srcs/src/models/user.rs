@@ -14,26 +14,31 @@ pub struct NoPasswordUser {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct CreateUserBody {
+pub struct CreateUserModel {
 	pub username: String,
     pub email: String,
     pub password: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct LoginUserBody {
+pub struct LoginUserModel {
     pub email: String,
     pub password: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct AddSoldBody {
+pub struct AddSoldModel {
     pub user_id: i32,
-    pub sold: i32,
+    pub sold_to_add: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UserOrdersData {
     pub order_id: i32,
     pub product_id: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct UserIdModel {
+    pub user_id: i32,
 }

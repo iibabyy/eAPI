@@ -20,7 +20,7 @@ pub fn config(config: &mut web::ServiceConfig) {
 pub fn user_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/user")
-			.service(user::root::create)
+			.service(user::root::register)
 			.service(user::root::get_by_id)
 			.service(user::root::get_all)
 			.service(user::root::delete)
@@ -33,7 +33,7 @@ pub fn products_config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/product")
 			.service(product::root::create)
-			.service(product::root::get_by_id)
+			.service(product::root::get)
 		);
 }
 

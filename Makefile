@@ -1,19 +1,19 @@
 all:
 	make -s all_docker
 # make -s all_database
-# make -s all_backend
+# make -s all_api
 
 clean:
-	make -s clean_backend
+	make -s clean_api
 
 fclean:
-	make -s fclean_backend
+	make -s fclean_api
 	make -s fclean_docker
 # make -s fclean_database
 
-all_backend: backend_run
-clean_backend: backend_clean
-fclean_backend: backend_fclean
+all_api: api_run
+clean_api: api_clean
+fclean_api: api_fclean
 
 all_docker: docker_d
 fclean_docker: docker_clean
@@ -22,50 +22,50 @@ all_database: migration_run
 fclean_database: migration_revert
 
 
-###		BACKEND		###
+###		api		###
 
 PROJECT_NAME = myapp
-BACKEND_PATH = app/backend/srcs/
-BACKEND_BIN = app/backend/srcs/target/release/$(PROJECT_NAME)
-BACKEND_DEBUG_BIN = app/backend/srcs/target/debug/$(PROJECT_NAME)
-BACKEND_MANIFEST_PATH = --manifest-path $(BACKEND_PATH)/Cargo.toml
+api_PATH = app/api/srcs/
+api_BIN = app/api/srcs/target/release/$(PROJECT_NAME)
+api_DEBUG_BIN = app/api/srcs/target/debug/$(PROJECT_NAME)
+api_MANIFEST_PATH = --manifest-path $(api_PATH)/Cargo.toml
 
-backend_run: $(BACKEND_BIN)
-	./$(BACKEND_BIN)
+api_run: $(api_BIN)
+	./$(api_BIN)
 
-backend_debug_run: $(BACKEND_DEBUG_BIN)
-	cargo run $(BACKEND_MANIFEST_PATH)
+api_debug_run: $(api_DEBUG_BIN)
+	cargo run $(api_MANIFEST_PATH)
 
-backend_build:
-	cargo build --release $(BACKEND_MANIFEST_PATH)
+api_build:
+	cargo build --release $(api_MANIFEST_PATH)
 
-backend_debug_build:
-	cargo build $(BACKEND_MANIFEST_PATH)
+api_debug_build:
+	cargo build $(api_MANIFEST_PATH)
 
-$(BACKEND_BIN):
-	cargo build --release $(BACKEND_MANIFEST_PATH)
+$(api_BIN):
+	cargo build --release $(api_MANIFEST_PATH)
 
-$(BACKEND_DEBUG_BIN):
-	cargo build $(BACKEND_MANIFEST_PATH)
+$(api_DEBUG_BIN):
+	cargo build $(api_MANIFEST_PATH)
 
-backend_clean:
-	mv $(BACKEND_BIN) $(BACKEND_PATH)
-	cargo clean $(BACKEND_MANIFEST_PATH)
-	mkdir -p $(BACKEND_PATH)/target/release
-	mv $(BACKEND_PATH)/$(PROJECT_NAME) $(BACKEND_PATH)/target/release/
+api_clean:
+	mv $(api_BIN) $(api_PATH)
+	cargo clean $(api_MANIFEST_PATH)
+	mkdir -p $(api_PATH)/target/release
+	mv $(api_PATH)/$(PROJECT_NAME) $(api_PATH)/target/release/
 
-backend_debug_clean:
-	mv $(BACKEND_DEBUG_BIN) $(BACKEND_PATH)
-	cargo clean $(BACKEND_MANIFEST_PATH)
-	mkdir -p $(BACKEND_PATH)/target/debug
-	mv $(BACKEND_PATH)/$(PROJECT_NAME) $(BACKEND_PATH)/target/debug/
+api_debug_clean:
+	mv $(api_DEBUG_BIN) $(api_PATH)
+	cargo clean $(api_MANIFEST_PATH)
+	mkdir -p $(api_PATH)/target/debug
+	mv $(api_PATH)/$(PROJECT_NAME) $(api_PATH)/target/debug/
 
-backend_fclean:
-	cargo clean $(BACKEND_MANIFEST_PATH)
+api_fclean:
+	cargo clean $(api_MANIFEST_PATH)
 
 ###		DATABASE	###
 
-MIGRATION_PATH = app/backend/migrations
+MIGRATION_PATH = app/api/migrations
 
 migration_run:
 	sqlx migrate run --source $(MIGRATION_PATH)

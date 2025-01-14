@@ -10,11 +10,15 @@ pub struct Order {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct CreateOrderBody {
+pub struct OrderIdModel {
+    pub order_id: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct CreateOrderModel {
     pub user_id: i32,
     pub product_id: i32,
 }
-
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OrderDetails {
@@ -23,7 +27,14 @@ pub struct OrderDetails {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct CreateDetailsBody {
+pub struct CreateOrderDetailsModel {
+	pub order_id: i32,
+    pub delivery_address: String,
+}
+
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OrderDetailsIdModel {
 	pub order_id: i32,
     pub delivery_address: String,
 }
