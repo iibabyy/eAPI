@@ -12,16 +12,6 @@ services:
   #   volumes:
   #     - backend:/app
 
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend
-  #   ports:
-  #     - 3000:3000
-  #   volumes:
-  #     - frontend:/app
-  #   networks:
-  #     - app-network
-
   db:
     image: postgres:15
     container_name: db
@@ -55,13 +45,6 @@ volumes:
     #   o: 'bind'
     #   device: /lib/myapp/data
 
-  frontend:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: ./frontend/requirements/
-  
   backend:
     driver: local
     driver_opts:
