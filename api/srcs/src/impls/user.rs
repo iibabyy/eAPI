@@ -1,8 +1,47 @@
 use actix_web::HttpResponse;
-use bcrypt::{hash, DEFAULT_COST};
+use bcrypt::DEFAULT_COST;
 use sqlx::{Pool, Postgres};
 
-use crate::models::user::NoPasswordUser;
+use crate::models::user::{LoginUserModel, NoPasswordUser, PasswordUser};
+
+pub async fn try_to_login(
+	infos: LoginUserModel,
+	db: &Pool<Postgres>,
+) -> Result<NoPasswordUser, HttpResponse> {
+	let user = match sqlx::query_as!(
+		PasswordUser,
+		r#"
+		SELECT
+			user_id,
+			password
+		FROM
+			users
+		WHERE
+			email = $1
+		"#,
+		infos.email
+	)
+	.fetch_optional(db).await {
+		Ok(Some(user)) => user,
+		Ok(None) => return Err(HttpResponse::NotFound().body("email or password incorrect")),
+		Err(err) => {
+			// sleep 1 ? to counter brutforce
+			return Err(HttpResponse::InternalServerError().body(err.to_string()))
+		},
+	};
+
+	let valid_password = match bcrypt::verify(infos.password, &user.password) {
+		Ok(is_valid) => is_valid,
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
+	};
+
+	if valid_password == false {
+		return Err(HttpResponse::NotFound().body("email or password incorrect"))
+	} else {
+		return get_user(user.user_id, db).await
+	}
+
+}
 
 pub async fn get_user(
 	id: i32,
@@ -26,7 +65,8 @@ pub async fn get_user(
 	)
 	.fetch_one(db).await {
 		Ok(user) => user,
-		Err(err) => return Err(HttpResponse::from_error(err))
+		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	};
 
 	Ok(user)
@@ -38,7 +78,7 @@ pub async fn create_user(
 	password: &String,
 	db: &Pool<Postgres>,
 ) -> Result<NoPasswordUser, HttpResponse> {
-	let password = match hash(password, DEFAULT_COST) {
+	let password = match bcrypt::hash(password, DEFAULT_COST) {
 		Ok(hash) => hash,
 		Err(err) => return Err(HttpResponse::InternalServerError().body(format!("failed to hash password: {}", err.to_string()))),
 	};
@@ -65,7 +105,8 @@ pub async fn create_user(
 	)
 	.fetch_one(db).await {
 		Ok(user) => user,
-		Err(err) => return Err(HttpResponse::from_error(err)),
+		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	};
 
 	Ok(user)
@@ -86,7 +127,8 @@ pub async fn delete_user(
 	)
 	.execute(db).await {
 		Ok(_) => Ok(()),
-		Err(err) => Err(HttpResponse::from_error(err)),
+		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	}
 }
 
@@ -109,7 +151,8 @@ pub async fn get_all_users(
 	)
 	.fetch_all(db).await {
 		Ok(users) => Ok(users),
-		Err(err) => Err(HttpResponse::from_error(err)),
+		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	}
 }
 
@@ -138,7 +181,8 @@ pub async fn add_sold_to_user(
     )
     .fetch_one(db).await {
         Ok(user) => user,
-        Err(err) => return Err(HttpResponse::from_error(err)),
+		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
     };
 
 	Ok(user)

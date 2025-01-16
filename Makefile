@@ -1,5 +1,6 @@
 all:
 	make -s all_docker
+	make -s migration_run
 # make -s all_database
 # make -s all_api
 
@@ -9,6 +10,7 @@ clean:
 fclean:
 	make -s fclean_api
 	make -s fclean_docker
+	make -s migration_revert
 # make -s fclean_database
 
 all_api: api_run
@@ -25,9 +27,9 @@ fclean_database: migration_revert
 ###		api		###
 
 PROJECT_NAME = myapp
-api_PATH = app/api/srcs/
-api_BIN = app/api/srcs/target/release/$(PROJECT_NAME)
-api_DEBUG_BIN = app/api/srcs/target/debug/$(PROJECT_NAME)
+api_PATH = api/srcs/
+api_BIN = api/srcs/target/release/$(PROJECT_NAME)
+api_DEBUG_BIN = api/srcs/target/debug/$(PROJECT_NAME)
 api_MANIFEST_PATH = --manifest-path $(api_PATH)/Cargo.toml
 
 api_run: $(api_BIN)
@@ -65,7 +67,7 @@ api_fclean:
 
 ###		DATABASE	###
 
-MIGRATION_PATH = app/api/migrations
+MIGRATION_PATH = api/migrations
 
 migration_run:
 	sqlx migrate run --source $(MIGRATION_PATH)
@@ -76,28 +78,28 @@ migration_revert:
 ###		DOCKER		###
 
 docker: #volume_up
-	docker compose -f app/docker-compose.yml up --build
+	docker compose -f docker-compose.yml up --build
 
 docker_down:
-	docker compose -f app/docker-compose.yml down
+	docker compose -f docker-compose.yml down
 
 docker_d: #volume_up
-	docker compose -f app/docker-compose.yml up --build -d
+	docker compose -f docker-compose.yml up --build -d
 
 docker_stop:
-	docker compose -f app/docker-compose.yml stop
+	docker compose -f docker-compose.yml stop
 
 docker_start:
-	docker compose -f app/docker-compose.yml start
+	docker compose -f docker-compose.yml start
 
 docker_re: docker_down docker_up
 docker_red: docker_down docker_d
 
 docker_volume_up:
-	mkdir -p /lib/myapp/data
+	mkdir -p /lib/mydata
 
 docker_volume_down:
-	rm -rf /lib/myapp/data
+	rm -rf /lib/mydata
 
 # network_up:
 # 	docker network create app-network

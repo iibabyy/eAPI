@@ -1,4 +1,4 @@
-use actix_web::{delete, get, post, web::{self, Json, Query}, HttpResponse};
+use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
 
 use crate::{impls::product::{create_product, delete_product, get_product}, models::product::*, utils::app_state::AppState};
 
@@ -12,13 +12,13 @@ use crate::{impls::product::{create_product, delete_product, get_product}, model
 /* --- [ ROUTES ] --- */
 /* ------------------ */
 
-#[get("/")]
+#[get("/{product_id}")]
 async fn get(
-	body: Query<ProductIdModel>,
+	id: web::Path<i32>,
 	data: web::Data<AppState>,
 ) -> HttpResponse {
 
-	match get_product(body.product_id, &data.db).await {
+	match get_product(id.into_inner(), &data.db).await {
 		Ok(product) => HttpResponse::Ok().json(product),
 		Err(err) => err,
 	}
@@ -42,14 +42,14 @@ async fn create(
 	}
 }
 
-#[delete("/")]
+#[delete("/{product_id}")]
 async fn delete(
-	body: Query<ProductIdModel>,
+	id: web::Path<i32>,
 	data: web::Data<AppState>,
 ) -> HttpResponse {
 
 	match delete_product(
-			body.product_id,
+			id.into_inner(),
 			&data.db
 		).await {
 		Ok(product) => HttpResponse::Ok().json(product),

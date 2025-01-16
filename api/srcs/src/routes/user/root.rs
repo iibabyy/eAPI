@@ -1,5 +1,5 @@
-use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
-use crate::{impls::user::{add_sold_to_user, create_user, delete_user, get_all_users, get_user}, models::user::*, utils::app_state::AppState};
+use actix_web::{delete, get, post, put, web::{self, Json, Path, Query}, HttpResponse};
+use crate::{impls::user::{add_sold_to_user, create_user, delete_user, get_all_users, get_user, try_to_login}, models::user::*, utils::app_state::AppState};
 
 
 /* --- -------------- */
@@ -7,11 +7,24 @@ use crate::{impls::user::{add_sold_to_user, create_user, delete_user, get_all_us
 /* --- -------------- */
 
 #[get("/")]
-async fn get_by_id(
-    request: Json<UserIdModel>,
+async fn login (
+    infos: Json<LoginUserModel>,
     data: web::Data<AppState>
 ) -> HttpResponse {
-    let user = match get_user(request.user_id, &data.db).await {
+    let user = match try_to_login(infos.into_inner(), &data.db).await {
+        Ok(user) => user,
+        Err(err) => return err,
+    };
+
+    HttpResponse::Ok().json(user)
+}
+
+#[get("/{user_id}")]
+async fn get_by_id(
+    id: web::Path<i32>,
+    data: web::Data<AppState>
+) -> HttpResponse {
+    let user = match get_user(id.into_inner(), &data.db).await {
         Ok(user) => user,
         Err(err) => return err,
     };
@@ -34,19 +47,19 @@ async fn register(
     HttpResponse::Ok().json(user)
 }
 
-#[delete("/")]
+#[delete("/{user_id}")]
 async fn delete(
-    body: web::Json<UserIdModel>, 
+    id: web::Path<i32>, 
     data: web::Data<AppState>
 ) -> HttpResponse {
-    match delete_user(body.user_id, &data.db).await {
+    match delete_user(id.into_inner(), &data.db).await {
         Ok(_) => HttpResponse::Ok().body(format!("user deleted.")),
         Err(err) => err,
     }
 }
 
 
-#[get("/all")]
+#[get("/")]
 async fn get_all(
     data: web::Data<AppState>
 ) -> HttpResponse {
@@ -58,13 +71,14 @@ async fn get_all(
 
 }
 
-#[post("/sold")]
+#[put("/{user_id}/sold")]
 async fn add_sold(
-    body: Json<AddSoldModel>,
+    id: Path<i32>,
+    infos: Query<AddSoldModel>,
     data: web::Data<AppState>
 ) -> HttpResponse {
 
-    match add_sold_to_user(body.user_id, body.sold_to_add, &data.db).await {
+    match add_sold_to_user(id.into_inner(), infos.sold_to_add, &data.db).await {
         Ok(user) => HttpResponse::Ok().json(user),
         Err(err) => err,
     }

@@ -1,7 +1,7 @@
 services:
-  # backend:
-  #   build: ./backend
-  #   container_name: backend
+  # api:
+  #   build: ./api
+  #   container_name: api
   #   depends_on:
   #     - db
   #   env_file: ../.env
@@ -10,7 +10,7 @@ services:
   #   ports:
   #     - 2000:80
   #   volumes:
-  #     - backend:/app
+  #     - api:/app
 
   db:
     image: postgres:15
@@ -45,9 +45,9 @@ volumes:
     #   o: 'bind'
     #   device: /lib/myapp/data
 
-  backend:
+  api:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: ./backend/srcs
+      device: ./api/
