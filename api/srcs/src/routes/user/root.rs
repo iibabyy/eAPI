@@ -7,7 +7,7 @@ use crate::{models::user::*, services::{self, db_services}, utils::app_state::Ap
 /* --- [ ROUTES ] --- */
 /* --- -------------- */
 
-#[get("/")]
+#[post("/login")]
 async fn login (
     infos: Json<LoginUserModel>,
     session: Session,
@@ -15,7 +15,9 @@ async fn login (
 ) -> HttpResponse {
     let user = match services::users::login::try_to_login(infos.into_inner(), &session, &data.db).await {
         Ok(user) => user,
-        Err(err) => return err,
+        Err(err) => {
+            return err
+        },
     };
 
     HttpResponse::Ok().json(user)

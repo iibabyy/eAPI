@@ -63,14 +63,14 @@ fn set_redis_addr() -> String  {
 }
 
 fn set_redis_port() -> u16 {
-	let port = env::var("REDIS_PORT").unwrap_or("localhost".to_string());
+	let port = env::var("REDIS_PORT").unwrap_or("6379".to_string());
 
 	port.parse::<u16>().expect(&format!("POSTGRES_PORT: invalid port: {port}"))
 }
 
 fn set_redis_host() -> String {
 	dotenv::dotenv().ok();
-	env::var("REDIS_ADDRESS").expect("REDIS_ADDRESS: invalid environment variable")
+	env::var("REDIS_HOST").unwrap_or("localhost".to_string())
 }
 
 fn set_database_url() -> String {

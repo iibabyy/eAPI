@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod routes;
 mod utils;
 mod services;
