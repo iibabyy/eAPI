@@ -23,9 +23,9 @@ pub async fn get_product(
 		"#,
 		product_id,
 	)
-	.fetch_one(db).await {
-		Ok(product) => Ok(product),
-		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+	.fetch_optional(db).await {
+		Ok(Some(product)) => Ok(product),
+		Ok(None) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
 		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	}
 }
@@ -62,7 +62,6 @@ pub async fn create_product(
 	)
 	.fetch_one(db).await {
 		Ok(product) => Ok(product),
-		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
 		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	}
 }

@@ -1,8 +1,7 @@
 mod routes;
 mod utils;
-mod impls;
+mod services;
 mod models;
-mod database;
 
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, middleware::Logger, web, App, HttpServer};

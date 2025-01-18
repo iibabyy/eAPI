@@ -35,9 +35,9 @@ pub async fn get_order(
 		"#,
 		order_id,
 	)
-	.fetch_one(db).await {
-		Ok(order) => Ok(order),
-		Err(sqlx::Error::RowNotFound) => Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
+	.fetch_optional(db).await {
+		Ok(Some(order)) => Ok(order),
+		Ok(None) => Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
 		Err(err) => Err(HttpResponse::InternalServerError().body(err.to_string())),
 	}
 }
@@ -66,7 +66,6 @@ pub async fn create_order(
 	)
 	.fetch_one(db).await {
 		Ok(order) => order,
-		Err(sqlx::Error::RowNotFound) => return Err(HttpResponse::NotFound().body(sqlx::Error::RowNotFound.to_string())),
 		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	};
 
