@@ -5,13 +5,13 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct PasswordUser {
     pub user_id: i32,
     pub password: String,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct NoPasswordUser {
     pub user_id: i32,
 	pub username: String,

@@ -6,11 +6,22 @@ services:
   #     - db
   #   env_file: ../.env
   #   networks:
-  #     - app-network
+  #     - db_network
+  #     - redis_network
   #   ports:
   #     - 2000:80
   #   volumes:
-  #     - api:/app
+  #     - api_srcs:/app
+
+  redis:
+    image: redis:bookworm
+    container_name: redis
+    # expose:
+    #   - 6379
+    networks:
+      - redis_network
+    ports:
+      - 6379:6379
 
   db:
     image: postgres:15
@@ -24,13 +35,16 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
     networks:
-      - app-network
+      - db_network
 
 
 ##    NETWORKS    ##
 
 networks:
-  app-network:
+  db_network:
+    driver: bridge
+
+  redis_network:
     driver: bridge
 
 
@@ -45,9 +59,9 @@ volumes:
     #   o: 'bind'
     #   device: /lib/myapp/data
 
-  api:
+  api_srcs:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: ./api/
+      device: ./api/srcs

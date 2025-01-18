@@ -1,13 +1,40 @@
-use actix_web::HttpResponse;
+use actix_session::Session;
+use actix_web::{http::header, web, HttpResponse};
 use bcrypt::DEFAULT_COST;
+use deadpool_redis::redis::AsyncCommands;
+use serde::Serialize;
 use sqlx::{Pool, Postgres};
 
 use crate::models::user::{LoginUserModel, NoPasswordUser, PasswordUser};
 
+pub async fn insert_into_session<T: Serialize>(
+	session: &Session,
+	key: impl Into<String>,
+	value: &T,
+) -> Result<(), HttpResponse> {
+	match session.insert(key, value) {
+		Ok(_) => Ok(()),
+		Err(err) => Err(HttpResponse::InternalServerError().body(err.to_string()))
+	}
+}
+
+pub fn increase_session_counter(session: &mut Session) -> Result<(), actix_web::Error> {
+
+	if let Some(count) = session.get::<i32>("counter")? {
+		session.insert("counter", count + 1)?;
+	} else {
+		session.insert("counter", 1)?;
+	}
+
+	Ok(())
+}
+
 pub async fn try_to_login(
 	infos: LoginUserModel,
+	session: &Session,
 	db: &Pool<Postgres>,
 ) -> Result<NoPasswordUser, HttpResponse> {
+
 	let user = match sqlx::query_as!(
 		PasswordUser,
 		r#"
@@ -37,13 +64,16 @@ pub async fn try_to_login(
 
 	if valid_password == false {
 		return Err(HttpResponse::NotFound().body("email or password incorrect"))
-	} else {
-		return get_user(user.user_id, db).await
 	}
 
+	let user = get_user_from_db(user.user_id, db).await?;
+
+	insert_into_session(session, "user", &user).await?;
+
+	Ok(user)
 }
 
-pub async fn get_user(
+pub async fn get_user_from_db(
 	id: i32,
 	db: &Pool<Postgres>,
 ) -> Result<NoPasswordUser, HttpResponse> {
@@ -70,6 +100,31 @@ pub async fn get_user(
 	};
 
 	Ok(user)
+}
+
+pub async fn get_user_from_redis(
+	id: i32,
+	redis: &deadpool_redis::Pool,
+) -> Result<NoPasswordUser, HttpResponse> {
+
+	let mut connection = match redis.get().await {
+		Ok(conn) => conn,
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
+	};
+
+	let key = format!("user:{}", id);
+
+	match connection.get::<_, String>(&key).await {
+		Ok(json) => {
+			let user: NoPasswordUser = match serde_json::from_str(&json) {
+				Ok(user) => user,
+				Err(err) => return Err(HttpResponse::InternalServerError().body(format!("failed to deserialize user: {}", err))),
+			};
+
+			Ok(user)
+		},
+		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string()))
+	}
 }
 
 pub async fn create_user(

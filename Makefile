@@ -28,7 +28,7 @@ fclean_database: migration_revert
 
 PROJECT_NAME = myapp
 api_PATH = api/srcs/
-api_BIN = api/srcs/target/release/$(PROJECT_NAME)
+api_BIN = $(api_PATH)/target/release/$(PROJECT_NAME)
 api_DEBUG_BIN = api/srcs/target/debug/$(PROJECT_NAME)
 api_MANIFEST_PATH = --manifest-path $(api_PATH)/Cargo.toml
 
@@ -51,10 +51,10 @@ $(api_DEBUG_BIN):
 	cargo build $(api_MANIFEST_PATH)
 
 api_clean:
-	mv $(api_BIN) $(api_PATH)
+	mv $(api_BIN) $(api_PATH) || echo no binary
 	cargo clean $(api_MANIFEST_PATH)
 	mkdir -p $(api_PATH)/target/release
-	mv $(api_PATH)/$(PROJECT_NAME) $(api_PATH)/target/release/
+	mv $(api_PATH)/$(PROJECT_NAME) $(api_PATH)/target/release/  || echo no binary
 
 api_debug_clean:
 	mv $(api_DEBUG_BIN) $(api_PATH)

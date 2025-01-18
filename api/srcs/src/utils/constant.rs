@@ -1,3 +1,4 @@
+use actix_web::cookie::Key;
 use lazy_static::lazy_static;
 use std::env;
 
@@ -6,10 +7,13 @@ lazy_static!{
 	pub static ref DB_NAME: 		String	= set_db_name();
 	pub static ref DB_USER:			String	= set_db_user();
 	pub static ref DB_PASSWD:		String	= set_db_password();
-	pub static ref DB_ADDR:			String	= set_addr();
-	pub static ref DB_PORT:			u16		= set_port();
+	pub static ref DB_ADDR:			String	= set_db_host();
+	pub static ref DB_PORT:			u16		= set_db_port();
 	pub static ref DATABASE_URL:	String	= set_database_url();
-	pub static ref HASH_SECRET:		String	= set_hash_secret();
+	pub static ref SECRET_KEY:		Key		= Key::generate();
+	pub static ref REDIS_HOST:		String	= set_redis_host();
+	pub static ref REDIS_PORT:		u16		= set_redis_port();
+	pub static ref REDIS_ADDR:		String	= set_redis_addr();
 }
 
 fn set_listen() -> u16 {
@@ -24,21 +28,15 @@ fn set_listen() -> u16 {
 	}
 }
 
-fn set_port() -> u16 {
-	let port = env::var("POSTGRES_PORT").expect("POSTGRES_PORT: invalid environment variable");
+fn set_db_port() -> u16 {
+	let port = env::var("POSTGRES_PORT").unwrap_or("5432".to_string());
 
-	match port.parse::<u16>() {
-		Ok(port) => return port,
-		Err(err) => {
-			eprintln!("POSTGRES_PORT: invalid port: {port}: {err}");
-			panic!()
-		}
-	}
+	port.parse::<u16>().expect(&format!("POSTGRES_PORT: invalid port: {port}"))
 }
 
-fn set_addr() -> String {
+fn set_db_host() -> String {
 	dotenv::dotenv().ok();
-	env::var("POSTGRES_ADDRESS").expect("POSTGRES_ADDRESS: invalid environment variable")
+	env::var("POSTGRES_HOST").unwrap_or("localhost".to_string())
 }
 
 fn set_db_user() -> String {
@@ -56,9 +54,23 @@ fn set_db_name() -> String {
 	env::var("POSTGRES_DB").expect("POSTGRES_DB: invalid environment variable")
 }
 
-fn set_hash_secret() -> String {
+fn set_redis_addr() -> String  {
+	format!(
+		"redis://{}:{}",
+		REDIS_HOST.clone(),
+		REDIS_PORT.clone(),
+	)
+}
+
+fn set_redis_port() -> u16 {
+	let port = env::var("REDIS_PORT").unwrap_or("localhost".to_string());
+
+	port.parse::<u16>().expect(&format!("POSTGRES_PORT: invalid port: {port}"))
+}
+
+fn set_redis_host() -> String {
 	dotenv::dotenv().ok();
-	env::var("HASH_SECRET").expect("HASH_SECRET: invalid environment variable")
+	env::var("REDIS_ADDRESS").expect("REDIS_ADDRESS: invalid environment variable")
 }
 
 fn set_database_url() -> String {

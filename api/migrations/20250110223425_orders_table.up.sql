@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "orders" (
 	"updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY ("user_id") REFERENCES users(user_id) ON DELETE CASCADE,
 	FOREIGN KEY ("product_id") REFERENCES products(product_id),
-FOREIGN KEY ("order_details_id") REFERENCES order_details(order_details_id)
+	FOREIGN KEY ("order_details_id") REFERENCES order_details(order_details_id)
 );
 
 
