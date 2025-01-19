@@ -5,7 +5,7 @@ pub mod root;
 
 pub fn config(config: &mut web::ServiceConfig) {
 	config
-		.service(web::scope("/product")
+		.service(web::scope("/products")
 			.service(root::create)
 			.service(root::get)
 		);

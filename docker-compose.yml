@@ -1,27 +1,29 @@
 services:
   # api:
   #   build: ./api
+  #   image: api
   #   container_name: api
   #   depends_on:
   #     - db
-  #   env_file: ../.env
+  #     - redis
+  #   env_file: .env
   #   networks:
   #     - db_network
   #     - redis_network
   #   ports:
-  #     - 2000:80
+  #     - 8080:80
   #   volumes:
   #     - api_srcs:/app
 
   redis:
-    image: redis:bookworm
+    image: redis
     container_name: redis
-    # expose:
-    #   - 6379
+    expose:
+      - 6379
     networks:
       - redis_network
     ports:
-      - 6379:6379
+      - 6370:6379
 
   db:
     image: postgres:15
@@ -36,7 +38,6 @@ services:
       - database:/var/lib/postgresql/data
     networks:
       - db_network
-
 
 ##    NETWORKS    ##
 

@@ -73,7 +73,7 @@ migration_run:
 	sqlx migrate run --source $(MIGRATION_PATH)
 
 migration_revert:
-	sqlx migrate revert --source $(MIGRATION_PATH)
+	sqlx migrate revert --source $(MIGRATION_PATH) --target-version 0
 
 ###		DOCKER		###
 
