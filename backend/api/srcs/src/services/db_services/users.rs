@@ -37,6 +37,17 @@ pub async fn create_user(
 	)
 	.fetch_one(db).await {
 		Ok(user) => user,
+		Err(sqlx::Error::Database(db_err)) => {
+            // Accès aux détails de l'erreur
+            let message = match db_err.code().as_deref() {
+                Some("23514") => "Invalid input: CHECK constraint violated".to_string(),
+                Some("23505") => "Duplicate entry: UNIQUE constraint violated".to_string(),
+                Some("23502") => "Missing field: NOT NULL constraint violated".to_string(),
+                _ => return Err(HttpResponse::InternalServerError().body(format!("Database error: {}", db_err.message()))),
+            };
+
+			return Err(HttpResponse::BadRequest().body(message))
+        },
 		Err(err) => return Err(HttpResponse::InternalServerError().body(err.to_string())),
 	};
 

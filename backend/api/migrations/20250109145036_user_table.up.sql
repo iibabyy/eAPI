@@ -1,9 +1,9 @@
 -- Add up migration script here
 CREATE TABLE IF NOT EXISTS "users" (
 	"user_id" SERIAL PRIMARY KEY,
-	"email" VARCHAR(255) NOT NULL UNIQUE,
-	"password" VARCHAR(255) NOT NULL,
-	"username" VARCHAR(255) NOT NULL UNIQUE,
+	"email" VARCHAR(255) NOT NULL CHECK("email" <> '') UNIQUE,
+	"password" VARCHAR(255) NOT NULL CHECK("password" <> ''),
+	"username" VARCHAR(255) NOT NULL CHECK("username" <> '') UNIQUE,
 	"sold" INTEGER NOT NULL DEFAULT 0,
 	"day_requests" INTEGER NOT NULL DEFAULT 0,
 	"minute_requests" INTEGER NOT NULL DEFAULT 0,

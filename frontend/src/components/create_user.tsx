@@ -1,5 +1,6 @@
 import React, { FormEvent } from 'react'
 import { useFormStatus } from 'react-dom'
+import Input from './input'
 
 function SubmitButton() {
 
@@ -33,7 +34,6 @@ export const CreateUser = () => {
 				);
 
 				if (!response.ok) {
-					console.log(response)
 					throw new Error(await response.text())
 				}
 
@@ -41,6 +41,7 @@ export const CreateUser = () => {
 				
 				console.log("User created: ", user);
 			} catch (error) {
+				console.log(error)
 				console.error(error);
 			}
 		}
@@ -51,19 +52,10 @@ export const CreateUser = () => {
 	return (
 		<div className='user-create'>
 			<form onSubmit={onSubmit} className='user-create-form'>
-				<label>
-					Name
-				</label>
-				<input type='text' placeholder='enter your username' name="username" />
-				<label>
-					Email
-				</label>
-				<input type='text' placeholder='enter your email' name="email" />
-				<label>
-					Password
-				</label>
-				<input type='text' placeholder='enter your password' name="password" />
-				<button type="submit">Submit</button>
+				<Input name='username' label='Username' type='text' id="1" placeholder='enter your name' />
+				<Input name='email' label='Email' type='email' id="2" placeholder='enter your email' />
+				<Input name='password' label='Password' type='password' id="3" placeholder='enter your password' />
+				<button className='user-create-submit-button' type="submit">Submit</button>
 			</form>
 		</div>
 	)

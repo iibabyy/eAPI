@@ -21,10 +21,10 @@ function Profile(user: IUser) {
 			setShown(true);
 
 			setDetails(
-				<div className='user-profile-details'>
-					<p>{user.email}</p>
-					<p>sold: {user.sold}</p>
-				</div>
+				<>
+				<p className='user-profile-details'>{user.email}</p>
+				<p className='user-profile-details'>sold: {user.sold}</p>
+				</>
 			);
 
 		} else {
@@ -34,10 +34,11 @@ function Profile(user: IUser) {
 	}
 
 	return (
-		<div className='user-profile'>
-			<a onClick={ShowDetails}>{user.username}</a>
+		<li className='user-profile'>
+			<h3 className='user-profile-username'>{user.username}</h3>
 			{details}
-		</div>
+			<button onClick={ShowDetails}>Details</button>
+		</li>
 	)
 }
 
@@ -57,14 +58,14 @@ export const Users = () =>{
 
 	return (
 		<>
-			<div className='user-list'>
+			<ul className='user-list'>
 				{/* <div className='user-list-header'>
 					<span><strong>username</strong></span>
 					<span>email</span>
 					<span>sold</span>
 				</div> */}
 				{users.map((user) => <Profile {...user} />)}
-			</div>
+			</ul>
 		</>
 	)
 }
