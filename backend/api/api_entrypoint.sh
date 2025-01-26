@@ -11,3 +11,5 @@ if [ "$DEBUG" = "true" ]; then
 else
 	exec cargo watch -qcx "run --release"
 fi
+
+exit

@@ -43,7 +43,12 @@ async fn main() -> std::io::Result<()> {
         .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))
         .configure(routes::config)
         // .default_service(web::to(|| HttpResponse::Ok()))
-        .wrap(Cors::default().allowed_origin("http://localhost").allowed_origin("http://localhost").allowed_methods(vec!["GET", "POST", "PUT", "DELETE"]).allowed_headers(vec![http::header::AUTHORIZATION, http::header::CONTENT_TYPE]).max_age(3600),)
+        .wrap(
+            Cors::default()
+                .allow_any_header()
+                .allow_any_method()
+                .allow_any_origin()
+        )
     })
     .bind(("localhost", constant::LISTEN.clone()))
     .expect("")

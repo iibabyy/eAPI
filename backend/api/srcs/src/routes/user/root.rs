@@ -43,6 +43,8 @@ async fn register(
     data: web::Data<AppState>
 ) -> HttpResponse {
 
+    eprintln!("received: {:?}", &body.0);
+
     let user = match db_services::users::create_user(&body.username, &body.email, &body.password, &data.db).await {
         Ok(user) => user,
         Err(err) => return err,
@@ -53,7 +55,7 @@ async fn register(
 
 #[delete("/{user_id}")]
 async fn delete(
-    id: web::Path<i32>, 
+    id: web::Path<i32>,
     data: web::Data<AppState>
 ) -> HttpResponse {
     match db_services::users::delete_user(id.into_inner(), &data.db).await {
@@ -68,6 +70,7 @@ async fn get_all(
     data: web::Data<AppState>
 ) -> HttpResponse {
 
+    eprintln!("received");
     match db_services::users::get_all_users(&data.db).await {
         Ok(users) => HttpResponse::Ok().json(users),
         Err(err) => err,

@@ -4,7 +4,7 @@ pub mod root;
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
-		.service(web::scope("/user")
+		.service(web::scope("/users")
 			.service(root::register)
 			.service(root::login)
 			.service(root::get_by_id)
