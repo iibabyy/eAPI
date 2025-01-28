@@ -1,5 +1,8 @@
 use async_trait::async_trait;
 use sqlx::Postgres;
+use uuid::Uuid;
+
+use crate::models::User;
 
 pub mod db;
 
@@ -18,10 +21,18 @@ pub trait UserExtractor {
 	async fn get_users_by_name(
 		&self,
 		name: String,
+		page: u32,
+		limit: usize,
 	) -> Result<Vec<User>, sqlx::Error>;
 
 	async fn get_all_users(
 		&self,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<User>, sqlx::Error>;
+	async fn get_all_users_starting_by(
+		&self,
+		name: String,
 		page: u32,
 		limit: usize,
 	) -> Result<Vec<User>, sqlx::Error>;
@@ -32,4 +43,13 @@ pub trait UserExtractor {
 		email: T,
 		password: T,
 	) -> Result<User, sqlx::Error>;
+
+	
+	/*		Need to implement roles (basics users cannot delete users)	 	*/
+	// async fn delete_user<T: Into<String> + Send>(
+	// 	&self,
+	// 	name: T,
+	// 	email: T,
+	// 	password: T,
+	// ) -> Result<User, sqlx::Error>;
 }

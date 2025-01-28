@@ -1,4 +1,8 @@
+use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
+use uuid::Uuid;
+
+use crate::models::User;
 
 use super::UserExtractor;
 
@@ -16,7 +20,7 @@ impl DBClient {
 	}
 }
 
-
+#[async_trait]
 impl UserExtractor for DBClient {
 	async fn get_user(
 		&self,
@@ -25,7 +29,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold
+			SELECT id, name, email, password, sold, created_at, updated_at
 			FROM users
 			WHERE id = $1
 			"#,
@@ -44,7 +48,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold
+			SELECT id, name, email, password, sold, created_at, updated_at
 			FROM users
 			WHERE email = $1
 			"#,
@@ -67,7 +71,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold
+			SELECT id, name, email, password, sold, created_at, updated_at
 			FROM users
 			WHERE name = $1
 			LIMIT $2
@@ -90,10 +94,10 @@ impl UserExtractor for DBClient {
 	) -> Result<Vec<User>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let users: Option<User> = sqlx::query_as!(
+		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold
+			SELECT id, name, email, password, sold, created_at, updated_at
 			FROM users
 			LIMIT $1
 			OFFSET $2
@@ -115,10 +119,10 @@ impl UserExtractor for DBClient {
 	) -> Result<Vec<User>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let users: Option<User> = sqlx::query_as!(
+		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold
+			SELECT id, name, email, password, sold, created_at, updated_at
 			FROM users
 			WHERE starts_with(name, $1)
 			LIMIT $2
@@ -141,17 +145,17 @@ impl UserExtractor for DBClient {
 		password: T,
 	) -> Result<User, sqlx::Error> {
 		let user = sqlx::query_as!(
-			NoPasswordUser,
+			User,
 			r#"
-			INSERT INTO users ( username, email, password )
+			INSERT INTO users ( name, email, password )
 			VALUES ( $1, $2, $3 )
-			RETURNING id, name, email, password, sold
+			RETURNING id, name, email, password, sold, updated_at, created_at
 			"#,
-			username.into(),
+			name.into(),
 			email.into(),
 			password.into(),
 		)
-		.fetch_one(db)
+		.fetch_one(&self.pool)
 		.await?;
 
 		Ok(user)

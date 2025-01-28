@@ -54,3 +54,64 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<String, H
 		Err(_) => Err(HttpError::new(ErrorMessage::InvalidToken, 401)),
 	}
 }
+
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn create_and_decode_token() {
+		let user_id = "user123";
+		let secret = b"my-super-secret-key";
+
+		let token = create_token(user_id, secret, 60).unwrap();
+		let decoded_id = decode_token(&token, secret).unwrap();
+
+		assert_eq!(decoded_id, user_id);
+	}
+
+	#[test]
+	fn create_token_with_empty_user_id() {
+		let user_id = "";
+		let secret = b"my-super-secret-key";
+
+		let result = create_token(user_id, secret, 60);
+
+		assert!(result.is_err());
+		assert_eq!(
+			result.unwrap_err().into_kind(),
+			jsonwebtoken::errors::ErrorKind::InvalidSubject
+		)
+	}
+
+	#[test]
+	fn decode_invalid_token() {
+		let secret = b"my-super-secret-key";
+		let invalid_token = "invalid-token";
+
+		let result = decode_token(invalid_token, secret);
+
+		assert!(result.is_err());
+
+		let error = result.unwrap_err();
+		assert_eq!(error.status, 401);
+		assert_eq!(error.message, ErrorMessage::InvalidToken.to_string())
+	}
+
+	#[test]
+	fn decode_expired_token() {
+		let secret = b"my-super-secret-key";
+		let expired_token = create_token("user123", secret, -60).unwrap();
+
+		let result = decode_token(expired_token, secret);
+
+		assert!(result.is_err());
+
+		let error = result.unwrap_err();
+		assert_eq!(error.status, 401);
+		assert_eq!(error.message, ErrorMessage::InvalidToken.to_string())
+	}
+
+
+}

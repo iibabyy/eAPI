@@ -4,6 +4,8 @@ use actix_web::{HttpResponse, ResponseError};
 use bcrypt::BcryptError;
 use serde::{Deserialize, Serialize};
 
+use crate::dtos::Status;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
 	pub status: String,
@@ -18,7 +20,7 @@ impl fmt::Display for ErrorResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Response {
-	pub status: &'static str,
+	pub status: Status,
 	pub message: String,
 }
 
@@ -127,22 +129,22 @@ impl HttpError {
 	pub fn into_http_response(self) -> HttpResponse {
 		match self.status {
 			400 => HttpResponse::BadRequest().json(Response {
-                status: "fail",
+                status: Status::Failure,
                 message: self.message.into(),
             }),
             
 			401 => HttpResponse::Unauthorized().json(Response {
-                status: "fail",
+                status: Status::Failure,
                 message: self.message.into(),
             }),
             
 			409 => HttpResponse::Conflict().json(Response {
-                status: "fail",
+                status: Status::Failure,
                 message: self.message.into(),
             }),
            
 		    500 => HttpResponse::InternalServerError().json(Response {
-                status: "error",
+                status: Status::Error,
                 message: self.message.into(),
             }),
 
@@ -153,7 +155,7 @@ impl HttpError {
                 );
 
                 HttpResponse::InternalServerError().json(Response {
-                    status: "error",
+                    status: Status::Error,
                     message: ErrorMessage::ServerError.to_string(),
                 })
             }

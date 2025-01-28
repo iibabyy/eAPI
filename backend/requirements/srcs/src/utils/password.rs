@@ -1,4 +1,6 @@
 
+use bcrypt::DEFAULT_COST;
+
 use crate::error::ErrorMessage;
 
 

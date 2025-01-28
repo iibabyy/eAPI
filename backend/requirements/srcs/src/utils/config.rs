@@ -24,6 +24,7 @@ impl Config {
 			secret_key,
 		}
 	}
+
 }
 
 fn secret_key() -> String {
@@ -31,7 +32,7 @@ fn secret_key() -> String {
 }
 
 fn port() -> u16 {
-	env::var("LISTEN").unwrap_or("80".to_string()).parse::<u16>().expect(&format("LISTEN: invalid value: {}", ))
+	env::var("LISTEN").unwrap_or("80".to_string()).parse::<u16>().expect(&format!("LISTEN: invalid value"))
 }
 
 fn redis_url() -> String  {

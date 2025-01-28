@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -5,7 +6,7 @@ pub struct User {
     pub id: uuid::Uuid,
     pub name: String,
     pub email: String,
-    pub pasword: String,
+    pub password: String,
     pub sold: i32,
 
 	#[serde(rename = "createdAt")]
@@ -13,5 +14,3 @@ pub struct User {
     #[serde(rename = "updatedAt")]
     pub updated_at: Option<DateTime<Utc>>,
 }
-
-
