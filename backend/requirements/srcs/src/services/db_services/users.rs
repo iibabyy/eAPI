@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use bcrypt::DEFAULT_COST;
 use sqlx::{Pool, Postgres};
 
-use crate::models::user::*;
+use crate::models::User;
 
 pub async fn create_user(
 	username: &String,

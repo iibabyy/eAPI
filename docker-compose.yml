@@ -1,29 +1,29 @@
 services:
-  api:
-    build: ./backend
-    container_name: api
-    depends_on:
-      - db
-      - redis
-    env_file: .env
-    networks:
-      - app_network
-      - db_network
-    # ports:
-    #   - 8080:80
-    volumes:
-      - api_srcs:/app
-      - api_migrations:/var/lib/migrations
+  # api:
+  #   build: ./backend
+  #   container_name: api
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   env_file: .env
+  #   networks:
+  #     - app_network
+  #     - db_network
+  #   # ports:
+  #   #   - 8080:80
+  #   volumes:
+  #     - api_srcs:/app
+  #     - api_migrations:/var/lib/migrations
 
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    networks:
-      - app_network
-    ports:
-      - 8080:3000
-    volumes:
-      - frontend_srcs:/app
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   networks:
+  #     - app_network
+  #   ports:
+  #     - 8080:3000
+  #   volumes:
+  #     - frontend_srcs:/app
 
 
   redis:

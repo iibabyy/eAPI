@@ -1,7 +1,7 @@
 use actix_web::HttpResponse;
 use deadpool_redis::redis::AsyncCommands;
 
-use crate::models::user::*;
+use crate::models::User;
 
 
 pub async fn get_user_from_redis(

@@ -2,7 +2,7 @@ use actix_session::Session;
 use actix_web::HttpResponse;
 use sqlx::Postgres;
 
-use crate::{models::user::*, services::{self, db_services}};
+use crate::{models::User, services::{self, db_services}};
 
 
 pub async fn try_to_login(
