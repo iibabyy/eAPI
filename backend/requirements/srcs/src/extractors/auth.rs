@@ -160,7 +160,12 @@ use sqlx::{Pool, Postgres};
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
-	
+
+		sqlx::migrate!("../migrations")
+			.run(db_client.pool())
+			.await
+			.unwrap();
+
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
@@ -194,14 +199,19 @@ use sqlx::{Pool, Postgres};
 	async fn auth_middelware_missing_token(pool: Pool<Postgres>) {
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
-		let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
-	
+		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
+
+		sqlx::migrate!("../migrations")
+			.run(db_client.pool())
+			.await
+			.unwrap();
+
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
                     db_client,
                     env: config.clone(),
-					redis: redis_pool,
+					// redis: redis_pool,
                 }))
                 .service(handler_with_requireauth),
         )
@@ -229,17 +239,23 @@ use sqlx::{Pool, Postgres};
 		}
 	}
 
+	#[sqlx::test]
 	async fn auth_middelware_invalid_token(pool: Pool<Postgres>) {
 		let db_client = DBClient::new(pool);
 		let config = test_utils::test_config();
-		let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
+		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
+
+		sqlx::migrate!("../migrations")
+			.run(db_client.pool())
+			.await
+			.unwrap();
 
 		let app = test::init_service(
 			App::new()
 				.app_data(web::Data::new(AppState {
 					db_client,
 					env: config,
-					redis: redis_pool,
+					// redis: redis_pool,
 				}))
 				.service(handler_with_requireauth),
 		)

@@ -19,7 +19,6 @@ use utils::{AppState, config::{self, Config}};
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("Start !");
     // if std::env::var_os("RUST_LOG").is_none() {
     std::env::set_var("RUST_LOG", "actix_web=info");
     // }
@@ -28,7 +27,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let config = Config::init();
 
-    eprintln!("Config done !");
 
     // creating db connection pool
     let db_client = DBClient::new(
@@ -37,15 +35,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .connect(&config.database_url)
             .await?
     );
-    eprintln!("Postgres pool done !");
 
     // creating redis connection pool
     let redis_pool = deadpool_redis::Config::from_url(&config.redis_url)
         .create_pool(Some(Runtime::Tokio1))?;
-    eprintln!("Redis pool done !");
-
+    
     let port = config.port;
 
+    
+    eprintln!("Server listening on port 0.0.0.0:{port}");
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()
@@ -53,14 +51,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .allow_any_origin();
 
         App::new()
-            .wrap(Logger::new("%a %r %s"))
-            .wrap(cors)
-            .configure(routes::config)
             .app_data(web::Data::new( AppState {
                 db_client: db_client.clone(),
                 // redis: redis_pool.clone(),
                 env: config.clone(),
             }))
+            .configure(routes::config)
+            .wrap(Logger::new("%a %r %s"))
+            .wrap(cors)
             // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))
     })
     .bind(("0.0.0.0", port))?

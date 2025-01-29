@@ -82,11 +82,10 @@ async fn get_all(
     query: Query<RequestQueryDto>
 ) -> Result<HttpResponse, HttpError> {
 
-    query
-        .validate()
+    query.validate()
         .map_err(|err| HttpError::bad_request(err.to_string()))?;
 
-    let page = query.page.unwrap_or(0);
+    let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(10);
 
     let users: Vec<FilterForeignUserDto> = data

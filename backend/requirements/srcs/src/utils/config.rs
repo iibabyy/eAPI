@@ -8,6 +8,7 @@ pub struct Config {
 	pub redis_url: String,
 	pub secret_key: String,
 	pub port: u16,
+	pub jwt_max_age: i64,
 }
 
 impl Config {
@@ -16,12 +17,14 @@ impl Config {
 		let redis_url = redis_url();
 		let port = port();
 		let secret_key = secret_key();
+		let jwt_max_age = jwt_max_age();
 
 		Self {
 			database_url,
 			redis_url,
 			port,
 			secret_key,
+			jwt_max_age,
 		}
 	}
 
@@ -29,6 +32,10 @@ impl Config {
 
 fn secret_key() -> String {
 	env::var("SECRET_KEY").expect("SECRET_KEY must be set")
+}
+
+fn jwt_max_age() -> i64 {
+	env::var("JWT_MAX_AGE").unwrap_or("5".to_string()).parse::<i64>().expect(&format!("JWT_MAX_AGE: invalid value"))
 }
 
 fn port() -> u16 {

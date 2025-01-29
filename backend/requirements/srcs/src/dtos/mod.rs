@@ -25,7 +25,7 @@ pub fn validate_password(password: &str) -> Result<(), ValidationError> {
 		return Err(ValidationError::new("failed").with_message(Cow::Borrowed("Password must be at least 6 characters")))
 	}
 
-	if password.len() > 25 {
+	if password.len() > 30 {
 		return Err(ValidationError::new("failed").with_message(Cow::Borrowed("Password must be at most 25 characters")))
 	}
 

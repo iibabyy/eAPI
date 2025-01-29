@@ -18,6 +18,10 @@ impl DBClient {
 			pool
 		}
 	}
+	
+	pub fn pool(&self) -> &Pool<Postgres> {
+		&self.pool
+	}
 }
 
 #[async_trait]

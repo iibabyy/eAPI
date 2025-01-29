@@ -4,8 +4,8 @@ use bcrypt::DEFAULT_COST;
 use crate::error::ErrorMessage;
 
 
-const MAX_PASSWORD_LENGTH: usize = 64;
-const MIN_PASSWORD_LENGTH: usize = 64;
+const MAX_PASSWORD_LENGTH: usize = 30;
+const MIN_PASSWORD_LENGTH: usize = 6;
 
 pub fn hash(password: impl Into<String>) -> Result<String, ErrorMessage> {
 	let password = password.into();
@@ -18,8 +18,8 @@ pub fn hash(password: impl Into<String>) -> Result<String, ErrorMessage> {
 		return Err(ErrorMessage::PasswordTooShort(MIN_PASSWORD_LENGTH))
 	}
 
-	if password.len() < MAX_PASSWORD_LENGTH {
-		return Err(ErrorMessage::PasswordTooShort(MAX_PASSWORD_LENGTH))
+	if password.len() > MAX_PASSWORD_LENGTH {
+		return Err(ErrorMessage::PasswordTooLong(MAX_PASSWORD_LENGTH))
 	}
 
 	let hashed = bcrypt::hash(password, DEFAULT_COST)?;
@@ -37,7 +37,7 @@ pub fn compare(password: &str, hashed_password: &str) -> Result<bool, ErrorMessa
 		return Err(ErrorMessage::PasswordTooShort(MIN_PASSWORD_LENGTH))
 	}
 
-	if password.len() < MAX_PASSWORD_LENGTH {
+	if password.len() > MAX_PASSWORD_LENGTH {
 		return Err(ErrorMessage::PasswordTooShort(MAX_PASSWORD_LENGTH))
 	}
 
