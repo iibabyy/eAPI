@@ -1,7 +1,7 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Clone)]
 pub struct User {
     pub id: uuid::Uuid,
     pub name: String,

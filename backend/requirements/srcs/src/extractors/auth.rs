@@ -145,7 +145,7 @@ mod tests {
 	use deadpool_redis::Runtime;
 use sqlx::{Pool, Postgres};
 
-	use crate::{database::db::DBClient, utils::{self, password, test_utils, token}};
+	use crate::{database::db::DBClient, utils::{self, password, test_utils::{self, init_test_users}, token}};
 
 	use super::*;
 
@@ -155,16 +155,13 @@ use sqlx::{Pool, Postgres};
 	}
 
 
-	#[sqlx::test]
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_valid_token(pool: Pool<Postgres>) {
+		init_test_users(&pool);
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
 
-		sqlx::migrate!("../migrations")
-			.run(db_client.pool())
-			.await
-			.unwrap();
 
         let app = test::init_service(
             App::new()
@@ -195,16 +192,12 @@ use sqlx::{Pool, Postgres};
 	}
 
 
-	#[sqlx::test]
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_missing_token(pool: Pool<Postgres>) {
+		init_test_users(&pool);
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
-
-		sqlx::migrate!("../migrations")
-			.run(db_client.pool())
-			.await
-			.unwrap();
 
         let app = test::init_service(
             App::new()
@@ -239,16 +232,13 @@ use sqlx::{Pool, Postgres};
 		}
 	}
 
-	#[sqlx::test]
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_invalid_token(pool: Pool<Postgres>) {
+		init_test_users(&pool);
 		let db_client = DBClient::new(pool);
 		let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
 
-		sqlx::migrate!("../migrations")
-			.run(db_client.pool())
-			.await
-			.unwrap();
 
 		let app = test::init_service(
 			App::new()

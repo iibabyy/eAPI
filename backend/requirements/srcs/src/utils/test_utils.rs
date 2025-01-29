@@ -24,21 +24,27 @@ pub fn test_config() -> Config {
 pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 	let db_client = DBClient::new(pool.clone());
 
+
 	let users = vec![
 		TestUser {
-            name: "John Doe",
-            email: "johndoe@gmail.com",
+            name: "Idrissa Baby",
+            email: "ibaby@gmail.com",
             password: "password1234",
         },
         TestUser {
-            name: "Nico Smith",
-            email: "nicosmith@gmail.com",
+            name: "Moussa Adamou",
+            email: "madamou@gmail.com",
             password: "123justgetit",
         },
         TestUser {
-            name: "Michelle Like",
-            email: "michellelike@gmail.com",
+            name: "Imhad Thari",
+            email: "ithari@gmail.com",
             password: "mostsecurepass",
+        },
+        TestUser {
+            name: "Idrissa Baby",
+            email: "duplicate@gmail.com",
+            password: "mypassword",
         },
 	];
 

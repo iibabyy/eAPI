@@ -1,4 +1,4 @@
-#![allow(unused)]
+pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../migrations");
 
 mod routes;
 mod utils;

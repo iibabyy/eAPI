@@ -1,4 +1,5 @@
 use actix_web::{cookie::{time::Duration, CookieBuilder, SameSite}, post, web::{self, Json}, HttpRequest, HttpResponse};
+use serde_json::json;
 use validator::Validate;
 
 use crate::{database::UserExtractor, dtos::{user::{FilterUserDto, LoginUserDto, RegisterUserDto, UserData, UserLoginResponseDto, UserResponseDto}, Status}, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{password, token, AppState}};
@@ -9,6 +10,7 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 		.service(web::scope("/auth")
 			.service(login)
 			.service(register)
+			.service(logout)
 		);
 }
 
@@ -114,3 +116,25 @@ async fn register(
 		Err(err) => Err(HttpError::server_error(err.to_string())),
 	}
 }
+
+#[post("/logout", wrap = "RequireAuth")]
+async fn logout() -> HttpResponse {
+	let cookie = CookieBuilder::new("token", "")
+		.path("/")
+		.max_age(Duration::seconds(-1))
+		.http_only(true)
+		.finish();
+
+	HttpResponse::Ok()
+		.cookie(cookie)
+		.json(json!({"status": "succes"}))
+}
+
+
+// #[cfg(test)]
+// mod tests {
+// 	use crate::database::db::DBClient;
+
+// use super::*;
+
+// }

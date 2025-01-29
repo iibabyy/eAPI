@@ -166,3 +166,179 @@ impl UserExtractor for DBClient {
 	}
 
 }
+
+
+#[cfg(test)]
+mod test {
+	 use futures_util::TryFutureExt;
+
+use crate::utils::test_utils::init_test_users;
+
+use super::*;
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_user_by_id(pool: Pool<Postgres>) {
+		let (id_1, _, _) = init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let user = db_client
+			.get_user(id_1)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get user by id: {}", err))
+			.expect("User not found");
+
+		assert_eq!(user.id, id_1);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_user_by_nonexistent_id(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let nonexistant_id = Uuid::new_v4();
+
+		let result = db_client
+			.get_user(nonexistant_id)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get user by id: {}", err));
+
+		assert!(result.is_none(), "Expected user to be None");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_user_by_email(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let email_to_find = "madamou@gmail.com";
+
+		let user = db_client
+			.get_user_by_email(email_to_find.to_string())
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get user by email: {}", err))
+			.expect("User not found");
+
+		assert_eq!(user.email, email_to_find);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_user_by_noneistent_email(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let email_to_find = "nonexistant@gmail.com";
+
+		let result = db_client
+			.get_user_by_email(email_to_find.to_string())
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get user by email: {}", err));
+
+		assert!(result.is_none(), "Expected user to be None");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_users_by_name(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name_to_find = "Idrissa Baby";
+
+		let users = db_client
+			.get_users_by_name(name_to_find.to_string(), 1, 10)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get users by name: {}", err));
+
+		assert!(users.len() == 2, "Expected to found 2 users");
+
+		for user in users {
+			assert_eq!(user.name, name_to_find);
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_users_by_nonexistent_name(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name_to_find = "Whoever Iam";
+
+		let users = db_client
+			.get_users_by_name(name_to_find.to_string(), 1, 10)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get users by name: {}", err));
+
+		assert_eq!(users.len(), 0);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_users(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let users = db_client
+			.get_all_users(1, 10)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get all users: {}", err));
+
+		assert_eq!(users.len(), 4);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_user(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name = "Mohammed Dembele";
+		let email = "mdembele@gmail.com";
+		let password = "somestrongpassword";
+
+		db_client.save_user(name, email, password).await.unwrap();
+
+		let user = db_client
+			.get_user_by_email(email.to_string())
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get users by name: {err}"))
+			.expect("User not found");
+
+		assert_eq!(name, user.name);
+		assert_eq!(email, user.email);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_user_but_email_is_taken(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name = "Imhad Thari";
+		let email = "ithari@gmail.com";
+		let password = "mostsecurepass";
+
+		let result = db_client.save_user(name, email, password).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
+				// Ok !
+			},
+			_ => {
+				panic!("Expected unique constraint violation error");
+			}
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_user_but_name_too_long(pool: Pool<Postgres>) {
+		init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let too_long_name = "a".repeat(200);
+		let email = "exemple@gamil.com";
+		let password = "password";
+
+		let result = db_client
+			.save_user(too_long_name.as_str(), email, password)
+			.await;
+		
+		assert!(result.is_err(), "Expected save to fail");
+	}
+
+}
