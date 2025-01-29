@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .configure(routes::config)
             .app_data(web::Data::new( AppState {
                 db_client: db_client.clone(),
-                redis: redis_pool.clone(),
+                // redis: redis_pool.clone(),
                 env: config.clone(),
             }))
             // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))

@@ -10,6 +10,6 @@ use crate::database::db::DBClient;
 #[derive(Clone)]
 pub struct AppState {
 	pub db_client: DBClient,
-	pub redis: deadpool_redis::Pool,
+	// pub redis: deadpool_redis::Pool,
 	pub env: Config,
 }
