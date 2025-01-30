@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../migrations");
 
 mod routes;
@@ -9,13 +11,11 @@ mod database;
 mod error;
 
 use actix_cors::Cors;
-use actix_session::{storage::RedisSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, http, middleware::Logger, web, App, HttpServer};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 use database::db::DBClient;
-use deadpool_redis::Runtime;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
-use utils::{AppState, config::{self, Config}};
+use utils::{AppState, config::Config};
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,9 +36,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?
     );
 
-    // creating redis connection pool
-    let redis_pool = deadpool_redis::Config::from_url(&config.redis_url)
-        .create_pool(Some(Runtime::Tokio1))?;
+    // // creating redis connection pool
+    // let redis_pool = deadpool_redis::Config::from_url(&config.redis_url)
+    //     .create_pool(Some(Runtime::Tokio1))?;
     
     let port = config.port;
 

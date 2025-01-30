@@ -14,7 +14,7 @@ impl FromRequest for Authenticated {
 
 	fn from_request(
 		req: &actix_web::HttpRequest,
-		payload: &mut actix_web::dev::Payload
+		_payload: &mut actix_web::dev::Payload
 	) -> Self::Future {
 		let value = req.extensions().get::<User>().cloned();
 
@@ -141,11 +141,10 @@ where
 
 #[cfg(test)]
 mod tests {
-	use actix_web::{cookie::Cookie, dev::{AppConfig, ServiceFactory}, get, http, test, App, HttpResponse};
-	use deadpool_redis::Runtime;
-use sqlx::{Pool, Postgres};
+	use actix_web::{cookie::Cookie, get, http, test, App, HttpResponse};
+	use sqlx::{Pool, Postgres};
 
-	use crate::{database::db::DBClient, utils::{self, password, test_utils::{self, init_test_users}, token}};
+	use crate::{database::db::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
 
 	use super::*;
 
@@ -157,7 +156,7 @@ use sqlx::{Pool, Postgres};
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_valid_token(pool: Pool<Postgres>) {
-		init_test_users(&pool);
+		init_test_users(&pool).await;
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
@@ -194,7 +193,7 @@ use sqlx::{Pool, Postgres};
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_missing_token(pool: Pool<Postgres>) {
-		init_test_users(&pool);
+		init_test_users(&pool).await;
 		let db_client = DBClient::new(pool);
         let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();
@@ -234,7 +233,7 @@ use sqlx::{Pool, Postgres};
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn auth_middelware_invalid_token(pool: Pool<Postgres>) {
-		init_test_users(&pool);
+		init_test_users(&pool).await;
 		let db_client = DBClient::new(pool);
 		let config = test_utils::test_config();
 		// let redis_pool = deadpool_redis::Config::from_url(&config.redis_url).create_pool(Some(Runtime::Tokio1)).unwrap();

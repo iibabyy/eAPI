@@ -49,7 +49,6 @@ pub struct RequestQueryDto {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterForeignUserDto {
-    pub id: String,
     pub name: String,
     pub email: String,
 
@@ -60,7 +59,6 @@ pub struct FilterForeignUserDto {
 impl FilterForeignUserDto {
     pub fn filter_user(user: &User) -> Self {
         FilterForeignUserDto {
-            id: user.id.to_string(),
             email: user.email.to_owned(),
             name: user.name.to_owned(),
             created_at: user.created_at.unwrap(),

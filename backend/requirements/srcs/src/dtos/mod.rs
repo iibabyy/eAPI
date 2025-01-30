@@ -6,7 +6,7 @@ use validator::ValidationError;
 pub mod user;
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Status {
     Success,
@@ -15,6 +15,22 @@ pub enum Status {
     Pending,
 }
 
+impl Into<String> for Status {
+	fn into(self) -> String {
+		self.to_string()
+	}
+}
+
+impl ToString for Status {
+	fn to_string(&self) -> String {
+		match self {
+			Status::Success => "success",
+			Status::Error => "error",
+			Status::Failure => "failure",
+			Status::Pending => "pending",
+		}.to_string()
+	}
+}
 
 pub fn validate_password(password: &str) -> Result<(), ValidationError> {
 	if password.is_empty() {

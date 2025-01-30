@@ -1,16 +1,14 @@
-use actix_session::Session;
-use actix_web::{delete, get, post, put, web::{self, Json, Path, Query}, HttpMessage, HttpRequest, HttpResponse};
-use futures_util::TryFutureExt;
-use serde_json::json;
+use actix_web::{get, web::{self, Query}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
-use crate::{database::UserExtractor, dtos::{user::{FilterForeignUserDto, FilterUserDto, ForeignUserResponseDto, RegisterUserDto, RequestQueryDto, UserData, UserListResponseDto, UserResponseDto}, Status}, error::{ErrorMessage, HttpError}, extractors::auth::Authenticated, utils::AppState};
+use crate::{database::UserExtractor, dtos::{user::{FilterForeignUserDto, FilterUserDto, ForeignUserResponseDto, RequestQueryDto, UserData, UserListResponseDto, UserResponseDto}, Status}, error::{ErrorMessage, HttpError}, extractors::auth::Authenticated, utils::AppState};
 use crate::extractors::auth::RequireAuth;
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/users")
+            .service(get_me)
 			.service(get_by_id)
 			.service(get_all)
 			// .service(delete)
@@ -32,7 +30,7 @@ async fn get_by_id(
         .db_client
         .get_user(id.into_inner())
         .await
-        .map_err(|err| HttpError::server_error(ErrorMessage::ServerError))?;
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
     if user.is_none() {
         return Err(HttpError::not_found(ErrorMessage::UserNoLongerExist))
@@ -92,7 +90,7 @@ async fn get_all(
         .db_client
         .get_all_users(page as u32, limit)
         .await
-        .map_err(|err| HttpError::server_error(ErrorMessage::ServerError.to_string()))?
+        .map_err(|_err| HttpError::server_error(ErrorMessage::ServerError.to_string()))?
         .iter()
         .map(|user| FilterForeignUserDto::filter_user(user))
         .collect();
@@ -120,3 +118,379 @@ async fn get_all(
 //     }
 
 // }
+
+
+
+#[cfg(test)]
+mod tests {
+    use actix_web::{cookie::CookieBuilder, http, test, App};
+    use sqlx::{Pool, Postgres};
+
+    use crate::{
+        database::db::DBClient,
+        error::{ErrorMessage, ErrorResponse},
+        utils::{
+            password,
+            test_utils::{test_config, init_test_users},
+            token,
+        },
+    };
+
+    use super::*;
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn get_me_with_valid_token(pool: Pool<Postgres>) {
+        let (user_id, _, _) = init_test_users(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let token =
+            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", token).finish())
+            .uri("/users/me")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let body = test::read_body(resp).await;
+
+        let user_response: UserResponseDto =
+            serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
+        let user = user_response.data.user;
+
+        assert_eq!(user_id.to_string(), user.id);
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn get_me_with_invalid_token(pool: Pool<Postgres>) {
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", "invalid_token").finish())
+            .uri("/users/me")
+            .to_request();
+
+        let result = test::try_call_service(&app, req).await.err();
+
+        match result {
+            Some(err) => {
+                let expected_status = http::StatusCode::UNAUTHORIZED;
+                let actual_status = err.as_response_error().status_code();
+
+                assert_eq!(actual_status, expected_status);
+
+                let err_response: ErrorResponse = serde_json::from_str(&err.to_string())
+                    .expect("Failed to deserialize JSON string");
+                let expected_message = ErrorMessage::InvalidToken.to_string();
+                assert_eq!(err_response.message, expected_message);
+            }
+            None => {
+                panic!("Service call succeeded, but an error was expected.");
+            }
+        }
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn get_me_with_missing_token(pool: Pool<Postgres>) {
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config),
+        )
+        .await;
+
+        let req = test::TestRequest::get().uri("/users/me").to_request();
+
+        let result = test::try_call_service(&app, req).await.err();
+
+        match result {
+            Some(err) => {
+                let expected_status = http::StatusCode::UNAUTHORIZED;
+                let actual_status = err.as_response_error().status_code();
+
+                assert_eq!(actual_status, expected_status);
+
+                let err_response: ErrorResponse = serde_json::from_str(&err.to_string())
+                    .expect("Failed to deserialize JSON string");
+                let expected_message = ErrorMessage::TokenNotProvided.to_string();
+                assert_eq!(err_response.message, expected_message);
+            }
+            None => {
+                panic!("Service call succeeded, but an error was expected.");
+            }
+        }
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn get_me_with_expired_token(pool: Pool<Postgres>) {
+        let (user_id, _, _) = init_test_users(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let expired_token =
+            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), -60).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/users/me")
+            .cookie(CookieBuilder::new("token", expired_token).finish())
+            .to_request();
+
+        let result = test::try_call_service(&app, req).await.err();
+
+        match result {
+            Some(err) => {
+                let expected_status = http::StatusCode::UNAUTHORIZED;
+                let actual_status = err.as_response_error().status_code();
+
+                assert_eq!(actual_status, expected_status);
+
+                let err_response: ErrorResponse = serde_json::from_str(&err.to_string())
+                    .expect("Failed to deserialize JSON string");
+                let expected_message = ErrorMessage::InvalidToken.to_string();
+                assert_eq!(err_response.message, expected_message);
+            }
+            None => {
+                panic!("Service call succeeded, but an error was expected.");
+            }
+        }
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn all_users_with_valid_token_with_admin_user(pool: Pool<Postgres>) {
+        let (_, _, _) = init_test_users(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let hashed_password = password::hash("password123").unwrap();
+        let user = db_client
+            .save_user("Vivian", "vivian@example.com", &hashed_password)
+            .await
+            .unwrap();
+
+        let token =
+            token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config)
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", token).finish())
+            .uri("/users/")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let body = test::read_body(resp).await;
+
+        let user_list_response: UserListResponseDto =
+            serde_json::from_slice(&body).expect("Failed to deserialize users response from JSON");
+
+        assert_eq!(user_list_response.users.len(), 5);
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn all_users_with_page_one_and_limit_two_query_parameters(pool: Pool<Postgres>) {
+        let (_, _, _) = init_test_users(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let hashed_password = password::hash("password123").unwrap();
+        let user = db_client
+            .save_user("Vivian", "vivian@example.com", &hashed_password)
+            .await
+            .unwrap();
+
+        let token =
+            token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config)
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", token).finish())
+            .uri("/users/?page=1&limit=2")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let body = test::read_body(resp).await;
+
+        let user_list_response: UserListResponseDto =
+            serde_json::from_slice(&body).expect("Failed to deserialize users response from JSON");
+
+        assert_eq!(user_list_response.users.len(), 2);
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn all_users_with_valid_token_by_regular_user(pool: Pool<Postgres>) {
+        let (user_id, _, _) = init_test_users(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let token =
+            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config)
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", token).finish())
+            .uri("/users/")
+            .to_request();
+
+        let result = test::try_call_service(&app, req).await.unwrap();
+
+        assert_eq!(result.status(), http::StatusCode::OK);
+
+        let body = test::read_body(result).await;
+        let body = serde_json::from_slice::<UserListResponseDto>(&body)
+            .expect("Failed to deserialize json response");
+        
+        assert_eq!(body.results, 4);
+        assert_eq!(body.status.to_string(), "success");
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn all_users_with_invalid_token(pool: Pool<Postgres>) {
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config)
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .cookie(CookieBuilder::new("token", "invalid_token").finish())
+            .uri("/users/")
+            .to_request();
+
+        let result = test::try_call_service(&app, req).await.err();
+
+        match result {
+            Some(err) => {
+                let expected_status = http::StatusCode::UNAUTHORIZED;
+                let actual_status = err.as_response_error().status_code();
+
+                assert_eq!(actual_status, expected_status);
+
+                let err_response: ErrorResponse = serde_json::from_str(&err.to_string())
+                    .expect("Failed to deserialize JSON string");
+                let expected_message = ErrorMessage::InvalidToken.to_string();
+                assert_eq!(err_response.message, expected_message);
+            }
+            None => {
+                panic!("Service call succeeded, but an error was expected.");
+            }
+        }
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn all_users_with_missing_token(pool: Pool<Postgres>) {
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .configure(super::config)
+        )
+        .await;
+
+        let req = test::TestRequest::get().uri("/users/").to_request();
+
+        let result = test::try_call_service(&app, req).await.err();
+
+        match result {
+            Some(err) => {
+                let expected_status = http::StatusCode::UNAUTHORIZED;
+                let actual_status = err.as_response_error().status_code();
+
+                assert_eq!(actual_status, expected_status);
+
+                let err_response: ErrorResponse = serde_json::from_str(&err.to_string())
+                    .expect("Failed to deserialize JSON string");
+                let expected_message = ErrorMessage::TokenNotProvided.to_string();
+                assert_eq!(err_response.message, expected_message);
+            }
+            None => {
+                panic!("Service call succeeded, but an error was expected.");
+            }
+        }
+    }
+
+}
