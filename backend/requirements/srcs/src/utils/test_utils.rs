@@ -19,7 +19,7 @@ pub struct TestProducts {
 	name: &'static str,
 	user_id: Uuid,
 	description: Option<String>,
-	price: i32,
+	price_in_cents: i64,
 }
 
 #[derive(Clone, Copy)]
@@ -92,19 +92,19 @@ pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, Tes
             name: "shoes",
 			description: None,
 			user_id: user_1,
-			price: 35,
+			price_in_cents: 35,
         },
         TestProducts {
             name: "jacket",
 			description: Some("A black jacket".to_string()),
 			user_id: user_2,
-			price: 50,
+			price_in_cents: 50,
         },
         TestProducts {
             name: "hat",
 			description: Some("A tall hat".to_string()),
 			user_id: user_3,
-			price: 15,
+			price_in_cents: 15,
         },
 	];
 
@@ -116,7 +116,7 @@ pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, Tes
 				product.name,
 				&product.user_id,
 				product.description,
-				product.price
+				product.price_in_cents
 			)
 			.await
 			.unwrap();

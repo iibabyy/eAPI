@@ -3,7 +3,7 @@ use jsonwebtoken::{DecodingKey, Validation};
 use serde_json::json;
 use validator::Validate;
 
-use crate::{database::UserExtractor, dtos::*, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{constants, password, status::Status, token::{self, extract_token_from, TokenClaims}, AppState}};
+use crate::{database::UserExtractor, dtos::{self, users::*}, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{constants, password, status::Status, token::{self, extract_token_from, TokenClaims}, AppState}};
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {

@@ -1,8 +1,13 @@
 use actix_web::{get, web::{self, Query}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
-use crate::{database::UserExtractor, dtos::*, error::{ErrorMessage, HttpError}, extractors::auth::Authenticated, utils::{status::Status, AppState}};
-use crate::extractors::auth::RequireAuth;
+use crate::{
+    dtos::{*, users::*},
+    database::UserExtractor,
+    extractors::auth::{RequireAuth, Authenticated},
+    error::{ErrorMessage, HttpError},
+    utils::{status::Status, AppState}
+};
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {

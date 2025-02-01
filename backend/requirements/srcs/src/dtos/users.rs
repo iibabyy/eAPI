@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 use crate::{models::User, utils::status::{validate_password, Status}};
 
+
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterUserDto {
@@ -35,14 +36,6 @@ pub struct LoginUserDto {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
-pub struct RequestQueryDto {
-    #[validate(range(min = 1))]
-    pub page: Option<usize>,
-    #[validate(range(min = 1, max = 50))]
-    pub limit: Option<usize>,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,7 +68,7 @@ pub struct FilterUserDto {
     pub id: String,
     pub name: String,
     pub email: String,
-    pub sold: i32,
+    pub sold_in_cents: i64,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -87,7 +80,7 @@ impl FilterUserDto {
             id: user.id.to_string(),
             email: user.email.to_owned(),
             name: user.name.to_owned(),
-            sold: user.sold,
+            sold_in_cents: user.sold_in_cents,
             created_at: user.created_at.unwrap(),
             updated_at: user.updated_at.unwrap(),
         }

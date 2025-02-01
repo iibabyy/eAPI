@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
 	name VARCHAR(100) NOT NULL CHECK(name <> ''),
 	email VARCHAR(255) NOT NULL CHECK(email <> '') UNIQUE,
 	password VARCHAR(255) NOT NULL CHECK(password <> ''),
-	sold INTEGER NOT NULL DEFAULT 0,
+	sold_in_cents BIGINT NOT NULL DEFAULT 0 CHECK(sold_in_cents >= 0),
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	updated_at TIMESTAMPTZ DEFAULT NOW()
 );

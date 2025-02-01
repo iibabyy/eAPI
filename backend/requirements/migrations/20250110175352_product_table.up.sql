@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS products (
 	name VARCHAR(100) NOT NULL,
 	user_id UUID NOT NULL,
 	description VARCHAR(1000),
-	price INTEGER NOT NULL,
+	price_in_cents BIGINT NOT NULL CHECK(price_in_cents >= 0),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE

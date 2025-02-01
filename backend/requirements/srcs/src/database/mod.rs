@@ -86,7 +86,7 @@ pub trait ProductExtractor {
 		name: T,
 		user_id: &Uuid,
 		description: Option<String>,
-		price: i32,
+		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error>;
 
 	async fn delete_product(

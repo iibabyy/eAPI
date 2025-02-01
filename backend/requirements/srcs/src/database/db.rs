@@ -33,7 +33,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
 			FROM users
 			WHERE id = $1
 			"#,
@@ -52,7 +52,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
 			FROM users
 			WHERE email = $1
 			"#,
@@ -75,7 +75,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
 			FROM users
 			WHERE name = $1
 			LIMIT $2
@@ -101,7 +101,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
 			FROM users
 			LIMIT $1
 			OFFSET $2
@@ -126,7 +126,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
 			FROM users
 			WHERE starts_with(name, $1)
 			LIMIT $2
@@ -153,7 +153,7 @@ impl UserExtractor for DBClient {
 			r#"
 			INSERT INTO users ( name, email, password )
 			VALUES ( $1, $2, $3 )
-			RETURNING id, name, email, password, sold, updated_at, created_at
+			RETURNING id, name, email, password, sold_in_cents, updated_at, created_at
 			"#,
 			name.into(),
 			email.into(),
@@ -177,7 +177,7 @@ impl ProductExtractor for DBClient {
 		let product: Option<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
 			FROM products
 			WHERE id = $1
 			"#,
@@ -200,7 +200,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
 			FROM products
 			WHERE user_id = $1
 			LIMIT $2
@@ -227,7 +227,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
 			FROM products
 			WHERE name = $1
 			LIMIT $2
@@ -253,7 +253,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
 			FROM products
 			LIMIT $1
 			OFFSET $2
@@ -278,7 +278,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
 			FROM products
 			WHERE starts_with(name, $1)
 			LIMIT $2
@@ -299,19 +299,19 @@ impl ProductExtractor for DBClient {
 		name: T,
 		user_id: &Uuid,
 		description: Option<String>,
-		price: i32,
+		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error> {
 		let product = sqlx::query_as!(
 			Product,
 			r#"
-			INSERT INTO products ( name, user_id, description, price )
+			INSERT INTO products ( name, user_id, description, price_in_cents )
 			VALUES ( $1, $2, $3, $4 )
-			RETURNING id, name, user_id, description, price, updated_at, created_at
+			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
 			"#,
 			name.into(),
 			user_id,
 			description,
-			price,
+			price_in_cents,
 		)
 		.fetch_one(&self.pool)
 		.await?;
@@ -328,7 +328,7 @@ impl ProductExtractor for DBClient {
 			r#"
 			DELETE FROM products
 			WHERE id = $1
-			RETURNING id, name, user_id, description, price, updated_at, created_at
+			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
 			"#,
 			user_id,
 		)
@@ -631,9 +631,9 @@ mod products_tests {
 		let name = "Car";
 		let user_id = data.user_id;
 		let description = Some("A beautiful car".to_string());
-		let price = 1200;
+		let price_in_cents = 1200;
 
-		db_client.save_product(name, &user_id, description.clone(), price).await.unwrap();
+		db_client.save_product(name, &user_id, description.clone(), price_in_cents).await.unwrap();
 
 		let products = db_client
 			.get_products_by_name(name.to_string(), 1, 5)
@@ -647,7 +647,7 @@ mod products_tests {
 		assert_eq!(product.name, name);
 		assert_eq!(product.user_id, user_id);
 		assert_eq!(product.description, description);
-		assert_eq!(product.price, price);
+		assert_eq!(product.price_in_cents, price_in_cents);
 	}
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -658,10 +658,10 @@ mod products_tests {
 		let too_long_name = "a".repeat(200);
 		let user_id = data.user_id;
 		let description = None;
-		let price = 12;
+		let price_in_cents = 12;
 
 		let result = db_client
-			.save_product(too_long_name.as_str(), &user_id, description, price)
+			.save_product(too_long_name.as_str(), &user_id, description, price_in_cents)
 			.await;
 
 		assert!(result.is_err(), "Expected save to fail");
