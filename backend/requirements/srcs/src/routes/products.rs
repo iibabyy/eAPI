@@ -1,15 +1,14 @@
 use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
 
-use crate::{models::product::*, services::db_services, utils::app_state::AppState};
+use crate::{dtos::*, utils::AppState};
 
-use actix_web::web;
 
 
 pub fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/products")
-			.service(root::create)
-			.service(root::get)
+			.service(self::create)
+			.service(self::get)
 		);
 }
 

@@ -1,8 +1,8 @@
 mod root;
 mod user;
 mod auth;
-// mod product;
-// mod order;
+// mod products;
+// mod orders;
 
 use actix_web::web;
 

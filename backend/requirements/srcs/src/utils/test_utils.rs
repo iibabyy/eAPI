@@ -4,7 +4,7 @@ use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::database::{db::DBClient, UserExtractor};
+use crate::database::{db::DBClient, ProductExtractor, UserExtractor};
 
 use super::config::Config;
 
@@ -12,6 +12,20 @@ pub struct TestUser {
 	name: &'static str,
 	email: &'static str,
 	password: &'static str,
+}
+
+#[derive(PartialEq, Eq)]
+pub struct TestProducts {
+	name: &'static str,
+	user_id: Uuid,
+	description: Option<String>,
+	price: i32,
+}
+
+#[derive(Clone, Copy)]
+pub struct TestProductsData {
+	pub product_id: Uuid,
+	pub user_id: Uuid,
 }
 
 pub fn test_config() -> Config {
@@ -65,6 +79,58 @@ pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 		users_id[0],
 		users_id[1],
 		users_id[2],
+	)
+
+}
+
+pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, TestProductsData, TestProductsData) {
+	let db_client = DBClient::new(pool.clone());
+	let (user_1, user_2, user_3) = init_test_users(pool).await;
+
+	let products = vec![
+		TestProducts {
+            name: "shoes",
+			description: None,
+			user_id: user_1,
+			price: 35,
+        },
+        TestProducts {
+            name: "jacket",
+			description: Some("A black jacket".to_string()),
+			user_id: user_2,
+			price: 50,
+        },
+        TestProducts {
+            name: "hat",
+			description: Some("A tall hat".to_string()),
+			user_id: user_3,
+			price: 15,
+        },
+	];
+
+	let mut products_id = vec![];
+
+	for product in products {
+		let product = db_client
+			.save_product(
+				product.name,
+				&product.user_id,
+				product.description,
+				product.price
+			)
+			.await
+			.unwrap();
+
+		products_id.push(TestProductsData {
+			product_id: product.id,
+			user_id: product.user_id
+		});
+	}
+
+	(
+		products_id[0],
+		products_id[1],
+		products_id[2],
 	)
 
 }
