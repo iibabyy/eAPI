@@ -2,32 +2,28 @@ import { useState } from 'react'
 import api from '../api'
 import { useNavigate } from 'react-router-dom';
 import { ACCESS_TOKEN } from '../constants';
+import '../styles/Form.css'
 
-function CredentialsForm({route, method}) {
+function RegisterForm({route, method}) {
 	const [loading, setLoading] = useState(false);
 	const navigate = useNavigate();
-
-	const name = method === "login" ? "Login" : "Register";
 
 	const handleSubmit = async (e) => {
 		setLoading(true);
 		e.preventDefault();
 
-		const username = e.currentTarget.elements.namedItem("username").value;
+		const name = e.currentTarget.elements.namedItem("name").value;
 		const email = e.currentTarget.elements.namedItem("email").value;
 		const password = e.currentTarget.elements.namedItem("password").value;
+		const passwordConfirm = e.currentTarget.elements.namedItem("password").value;
 
 		try {
-			const res = await api.post(route, {username, password})
-			if (method == "login") {
-				localStorage.setItem(ACCESS_TOKEN, res.data.token);
-				navigate("/");
-			} else {
-				navigate("/login");
-			}
+			const res = await api.post(route, {name, email, password, passwordConfirm})
+
+			navigate("/login");
 
 		} catch (error) {
-			alert(error)
+			alert(error.response.data.message)
 		} finally {
 			setLoading(false);
 		}
@@ -35,13 +31,19 @@ function CredentialsForm({route, method}) {
 
 
 	return <form onSubmit={handleSubmit} className='form-container'>
-		<h1>{name}</h1>
+		<h1>Register</h1>
 		
 		<input
 			className='form-input'
 			type='text'
-			name='username'
+			name='name'
 			placeholder='Username'
+		/>
+		<input
+			className='form-input'
+			type='email'
+			name='email'
+			placeholder='Email'
 		/>
 		<input
 			className='form-input'
@@ -50,10 +52,10 @@ function CredentialsForm({route, method}) {
 			placeholder='Password'
 		/>
 		<button className='form-button' type="submit">
-			{name}
+			Register
 		</button>
 
 	</form>
 }
 
-export default Form;
+export default RegisterForm;

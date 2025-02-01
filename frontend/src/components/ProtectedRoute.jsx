@@ -10,7 +10,11 @@ function ProtectedRoute({ children }) {
 	
 	useEffect(() => {
 		
-		auth().catch(() => setIsAuthorized(false))
+		try {
+			auth() //.catch(() => setIsAuthorized(false))
+		} catch (error) {
+			console.log(error);
+		}
 	})
 	
 	const refreshToken = async () => {
@@ -39,11 +43,13 @@ function ProtectedRoute({ children }) {
 
 		const decoded = jwtDecode(token);
 		const token_expiration = decoded.exp;
-		const now = Data.now() / 1000	// ms -> seconds
+		const now = Date.now() / 1000	// ms -> seconds
 
 		if (token_expiration < now) {
+			console.log("refreshing token")
 			await refreshToken()
 		} else {
+			console.log("authorized")
 			setIsAuthorized(true);
 		}
 	}
