@@ -39,7 +39,7 @@ impl Deref for Authenticated {
 	}
 }
 
-pub struct AuthMiddleware<S> {
+pub struct  AuthMiddleware<S> {
 	service: Rc<S>,
 }
 
@@ -68,7 +68,7 @@ where
 		let app_state = req.app_data::<web::Data<AppState>>().unwrap();
 
 		let user_id = match utils::token::decode_token(
-			token, 
+			&token,
 			app_state.env.secret_key.as_bytes()
 		) {
 			Ok(id) => id,
@@ -135,7 +135,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use actix_web::{cookie::Cookie, get, http, test, App, HttpResponse};
+	use actix_web::{cookie::Cookie, get, http::{self, header::{self, HeaderName, HeaderValue}}, test, web::Header, App, HttpResponse};
 	use sqlx::{Pool, Postgres};
 
 	use crate::{database::db::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
@@ -176,7 +176,9 @@ mod tests {
 		let token = token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
 		
 		let request = test::TestRequest::default()
-			.cookie(Cookie::new("token", token))
+			.insert_header(
+				(HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+			)
 			.to_request();
 
 		let response = test::call_service(&app, request).await;
@@ -245,10 +247,11 @@ mod tests {
 		.await;
 
 
-		let token = "invalid-token".to_string();
-
 		let request = test::TestRequest::default()
-			.cookie(Cookie::new("token", token))
+			.uri("/")
+			.insert_header(
+				(HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_static("Bearer invalid-token"))
+			)
 			.to_request();
 
 		let result = test::try_call_service(&app, request).await.err();

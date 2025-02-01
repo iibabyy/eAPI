@@ -41,6 +41,7 @@ pub fn create_token(
 		&claims,
 		&EncodingKey::from_secret(secret),
 	)
+
 }
 
 pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<String, HttpError> {
@@ -50,9 +51,12 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<String, H
 		&Validation::new(jsonwebtoken::Algorithm::HS256)
 	);
 
-
 	match decoded {
-		Ok(token) => Ok(token.claims.sub),
+		Ok(token) => {
+			
+			// if token.claims.exp < Utc::now().timestamp() as usize { panic!("Expired !") }
+			Ok(token.claims.sub)
+		},
 		Err(_) => Err(HttpError::new(ErrorMessage::InvalidToken, 401)),
 	}
 }
@@ -66,13 +70,13 @@ fn jwt_failed(message: impl ToString) -> ErrorResponse {
 
 pub fn extract_token_from(request: &HttpRequest) -> Result<String, ErrorResponse> {
 	let value = request.headers()
-	.get(http::header::AUTHORIZATION);
+		.get(http::header::AUTHORIZATION);
 
 	if value.is_none() { return Err(jwt_failed(ErrorMessage::TokenNotProvided)) }
 
 	let value = match value.unwrap().to_str() {
 		Ok(value) => value,
-		Err(err) => return Err(jwt_failed(format!("Failed to read provided token: {}", err.to_string()))),
+		Err(err) => return Err(jwt_failed(ErrorMessage::InvalidToken)),
 	};
 
 	let (token_type, token_value) = match value.split_once(' ') {

@@ -123,7 +123,7 @@ async fn get_all(
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{cookie::CookieBuilder, http, test, App};
+    use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, HeaderValue}}, test, App};
     use sqlx::{Pool, Postgres};
 
     use crate::{
@@ -158,7 +158,9 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", token).finish())
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            )
             .uri("/users/me")
             .to_request();
 
@@ -191,7 +193,9 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", "invalid_token").finish())
+            .insert_header(
+                (HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str("Bearer invalid-token").unwrap())
+            )
             .uri("/users/me")
             .to_request();
 
@@ -272,8 +276,10 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
+            )
             .uri("/users/me")
-            .cookie(CookieBuilder::new("token", expired_token).finish())
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -294,48 +300,6 @@ mod tests {
                 panic!("Service call succeeded, but an error was expected.");
             }
         }
-    }
-
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn all_users_with_valid_token_with_admin_user(pool: Pool<Postgres>) {
-        let (_, _, _) = init_test_users(&pool).await;
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
-
-        let hashed_password = password::hash("password123").unwrap();
-        let user = db_client
-            .save_user("Vivian", "vivian@example.com", &hashed_password)
-            .await
-            .unwrap();
-
-        let token =
-            token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .configure(super::config)
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", token).finish())
-            .uri("/users/")
-            .to_request();
-
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-
-        let body = test::read_body(resp).await;
-
-        let user_list_response: UserListResponseDto =
-            serde_json::from_slice(&body).expect("Failed to deserialize users response from JSON");
-
-        assert_eq!(user_list_response.users.len(), 5);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -364,7 +328,9 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", token).finish())
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            )
             .uri("/users/?page=1&limit=2")
             .to_request();
 
@@ -381,7 +347,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn all_users_with_valid_token_by_regular_user(pool: Pool<Postgres>) {
+    async fn all_users_with_valid_token(pool: Pool<Postgres>) {
         let (user_id, _, _) = init_test_users(&pool).await;
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
@@ -395,16 +361,18 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config)
+                .configure(super::config) 
         )
         .await;
 
         let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", token).finish())
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            )
             .uri("/users/")
             .to_request();
 
-        let result = test::try_call_service(&app, req).await.unwrap();
+        let result = test::try_call_service(&app, req).await. unwrap();
 
         assert_eq!(result.status(), http::StatusCode::OK);
 
@@ -432,7 +400,9 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .cookie(CookieBuilder::new("token", "invalid_token").finish())
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_static("Bearer invalid-token"))
+            )
             .uri("/users/")
             .to_request();
 

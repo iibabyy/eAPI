@@ -35,9 +35,9 @@ fn secret_key() -> String {
 }
 
 fn jwt_max_age() -> i64 {
-	let result_in_minutes = env::var("JWT_MAX_AGE").unwrap_or("5".to_string()).parse::<i64>().expect(&format!("JWT_MAX_AGE: invalid value"));
+	let result_in_seconds = env::var("JWT_MAX_AGE").unwrap_or("300".to_string()).parse::<i64>().expect(&format!("JWT_MAX_AGE: invalid value"));
 
-	result_in_minutes * 60
+	result_in_seconds
 }
 
 fn port() -> u16 {

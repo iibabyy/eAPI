@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
@@ -64,4 +67,15 @@ pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 		users_id[2],
 	)
 
+}
+
+pub async fn assert_user_infos(id: impl ToString, name: impl ToString, email: impl ToString, db_client: &DBClient) {
+	let user = db_client
+		.get_user(Uuid::from_str(&id.to_string()).expect("Invalid id"))
+		.await
+		.expect("Failed to get user")
+		.expect("User not found");
+
+	assert_eq!(user.name, name.to_string());
+	assert_eq!(user.email, email.to_string());
 }
