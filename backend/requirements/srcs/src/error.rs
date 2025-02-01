@@ -4,7 +4,8 @@ use actix_web::{HttpResponse, ResponseError};
 use bcrypt::BcryptError;
 use serde::{Deserialize, Serialize};
 
-use crate::dtos::Status;
+use crate::utils::status::Status;
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponse {
@@ -37,6 +38,7 @@ pub enum ErrorMessage {
     EmailExist,
     UserNoLongerExist,
     TokenNotProvided,
+    RefreshTokenNotProvided,
     PermissionDenied,
 }
 
@@ -66,6 +68,7 @@ impl ErrorMessage {
             ErrorMessage::PasswordTooShort(max_length) => {format!("Password must not be less than {} characters", max_length)}
             ErrorMessage::InvalidToken => "Authentication token is invalid or expired".to_string(),
             ErrorMessage::TokenNotProvided => "You are not logged in, please provide token".to_string(),
+            ErrorMessage::RefreshTokenNotProvided => "Refresh token not found, please log in".to_string(),
             ErrorMessage::PermissionDenied => "You are not allowed to perform this action".to_string(),
         }
     }

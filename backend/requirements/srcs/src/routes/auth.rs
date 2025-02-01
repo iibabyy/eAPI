@@ -1,8 +1,9 @@
-use actix_web::{cookie::{time::Duration, CookieBuilder}, post, web::{self, Json}, HttpResponse};
+use actix_web::{cookie::{time::Duration, CookieBuilder}, get, post, web::{self, Json}, HttpRequest, HttpResponse};
+use jsonwebtoken::{DecodingKey, Validation};
 use serde_json::json;
 use validator::Validate;
 
-use crate::{database::UserExtractor, dtos::{user::{FilterUserDto, LoginUserDto, RegisterUserDto, UserData, UserResponseDto}, Status}, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{password, token, AppState}};
+use crate::{database::UserExtractor, dtos::*, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{constants, password, status::Status, token::{self, extract_token_from, TokenClaims}, AppState}};
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
@@ -53,15 +54,22 @@ async fn login (
 	let token = token::create_token(
 		&user.id.to_string(),
 		data.env.secret_key.as_bytes(),
-		TOKEN_MAX_AGE_IN_SECONDS,
+		data.env.jwt_max_seconds,
 	)
 	.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
-	
+
+	let refresh_token = token::create_token(
+		&user.id.to_string(),
+		data.env.secret_key.as_bytes(),
+		data.env.jwt_max_seconds,
+	)
+	.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
+
 	let filtered_user = FilterUserDto::filter_user(&user);
 
-	let cookie = CookieBuilder::new("token", token.to_string())
+	let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.to_string(), refresh_token)
 		.path("/")
-		.max_age(Duration::minutes(TOKEN_MAX_AGE_IN_SECONDS))
+		.max_age(Duration::minutes(data.env.jwt_max_seconds))
 		.http_only(true)
 		// .same_site(SameSite::Strict)
 		.finish();
@@ -69,9 +77,9 @@ async fn login (
     Ok(
 		 HttpResponse::Ok()
 		 	.cookie(cookie)
-			.json(UserResponseDto {
+			.json(UserLoginResponseDto {
 				status: Status::Success,
-				data: UserData { user: filtered_user },
+				token,
 			})
 	)
 }
@@ -117,9 +125,9 @@ async fn register(
 	}
 }
 
-#[post("/logout", wrap = "RequireAuth")]
+#[get("/logout")]
 async fn logout() -> HttpResponse {
-	let cookie = CookieBuilder::new("token", "")
+	let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.clone(), "")
 		.path("/")
 		.max_age(Duration::seconds(-1))
 		.http_only(true)
@@ -130,6 +138,35 @@ async fn logout() -> HttpResponse {
 		.json(json!({"status": Status::Success}))
 }
 
+#[post("/refresh")]
+async fn refresh(
+	request: HttpRequest,
+	data: web::Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+
+	// verify deprecated token
+	let deprecated_token = match extract_token_from(&request) {
+		Ok(token) => token,
+		Err(err) => return Err(HttpError::unauthorized(err.to_string())),
+	};
+
+	// find refresh-token
+	let refresh_token = request
+		.cookie(&constants::REFRESH_TOKEN)
+		.ok_or_else(|| HttpError::unauthorized(ErrorMessage::RefreshTokenNotProvided))?;
+
+	let user_id = token::decode_token(refresh_token.value(), data.env.secret_key.as_bytes())?;
+
+	let new_token = token::create_token(&user_id, data.env.secret_key.as_bytes(), data.env.jwt_max_seconds)
+		.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
+
+	Ok(
+		HttpResponse::Ok().json(TokenResponseDto {
+			status: Status::Success,
+			token: new_token,
+		})
+	)
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,10 +1,12 @@
 use std::{ops::Deref, rc::Rc, task::{Context, Poll}};
 
-use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::{ErrorInternalServerError, ErrorUnauthorized}, web, FromRequest, HttpMessage};
+use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::{ErrorInternalServerError, ErrorUnauthorized}, http, web, FromRequest, HttpMessage, HttpRequest};
 use futures_util::{future::{ready, LocalBoxFuture, Ready}, FutureExt};
 use uuid::Uuid;
 
-use crate::{database::UserExtractor, error::{ErrorMessage, ErrorResponse, HttpError}, models::User, utils::{self, AppState}};
+use crate::{database::UserExtractor, error::{ErrorMessage, ErrorResponse, HttpError}, models::User, utils::{self, token::extract_token_from, AppState}};
+
+// LocalBoxFuture<'static, Result<ServiceResponse<actix_web::body::BoxBody>, actix_web::Error>>
 
 pub struct Authenticated(User);
 
@@ -58,23 +60,15 @@ where
 	}
 
 	fn call(&self, req: ServiceRequest) -> Self::Future {
-		let token = req
-			.cookie("token")
-			.map(|c| c.value().to_string());
+		let token = match extract_token_from(req.request()) {
+			Ok(token) => token,
+			Err(err) => return Box::pin(ready(Err(ErrorUnauthorized(err)))),
+		};
 
-		if token.is_none() {
-			let json_error = ErrorResponse {
-				status: "fail".to_string(),
-				message: ErrorMessage::TokenNotProvided.to_string(),
-			};
-
-			return Box::pin(ready(Err(ErrorUnauthorized(json_error))));
-		}
-	
 		let app_state = req.app_data::<web::Data<AppState>>().unwrap();
 
 		let user_id = match utils::token::decode_token(
-			&token.unwrap(), 
+			token, 
 			app_state.env.secret_key.as_bytes()
 		) {
 			Ok(id) => id,
@@ -180,7 +174,7 @@ mod tests {
 			.unwrap();
 
 		let token = token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
-
+		
 		let request = test::TestRequest::default()
 			.cookie(Cookie::new("token", token))
 			.to_request();

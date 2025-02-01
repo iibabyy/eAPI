@@ -3,8 +3,6 @@ use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
 use validator::ValidationError;
 
-pub mod user;
-
 
 #[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

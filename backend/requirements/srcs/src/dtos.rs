@@ -1,9 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
-use crate::models::User;
-
-use super::{validate_password, Status};
+use crate::{models::User, utils::status::{validate_password, Status}};
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,6 +120,12 @@ pub struct UserListResponseDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserLoginResponseDto {
+    pub status: Status,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TokenResponseDto {
     pub status: Status,
     pub token: String,
 }

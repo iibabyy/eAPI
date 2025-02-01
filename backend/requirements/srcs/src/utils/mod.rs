@@ -2,6 +2,8 @@ pub mod config;
 pub mod password;
 pub mod token;
 pub mod test_utils;
+pub mod constants;
+pub mod status;
 
 use config::Config;
 

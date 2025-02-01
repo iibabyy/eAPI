@@ -1,8 +1,9 @@
+use actix_web::{http, HttpRequest};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{ErrorMessage, HttpError};
+use crate::error::{ErrorMessage, ErrorResponse, HttpError};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
@@ -49,12 +50,40 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<String, H
 		&Validation::new(jsonwebtoken::Algorithm::HS256)
 	);
 
+
 	match decoded {
 		Ok(token) => Ok(token.claims.sub),
 		Err(_) => Err(HttpError::new(ErrorMessage::InvalidToken, 401)),
 	}
 }
 
+fn jwt_failed(message: impl ToString) -> ErrorResponse {
+	ErrorResponse {
+		status: "fail".to_string(),
+		message: message.to_string(),
+	}
+}
+
+pub fn extract_token_from(request: &HttpRequest) -> Result<String, ErrorResponse> {
+	let value = request.headers()
+	.get(http::header::AUTHORIZATION);
+
+	if value.is_none() { return Err(jwt_failed(ErrorMessage::TokenNotProvided)) }
+
+	let value = match value.unwrap().to_str() {
+		Ok(value) => value,
+		Err(err) => return Err(jwt_failed(format!("Failed to read provided token: {}", err.to_string()))),
+	};
+
+	let (token_type, token_value) = match value.split_once(' ') {
+		Some(result) => result,
+		None => return Err(jwt_failed(ErrorMessage::InvalidToken)),
+	};
+
+	if token_type != "Bearer" { return Err(jwt_failed(ErrorMessage::InvalidToken)) }
+
+	return Ok(token_value.to_string())
+}
 
 #[cfg(test)]
 mod tests {

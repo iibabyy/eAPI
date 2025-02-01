@@ -17,7 +17,7 @@ pub fn test_config() -> Config {
 		redis_url: "".to_string(),
 		secret_key: "my-test-secret".to_string(),
 		port: 8000,
-		jwt_max_age: 2,
+		jwt_max_seconds: 60 * 2,
 	}
 }
 

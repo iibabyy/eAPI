@@ -1,7 +1,7 @@
 use actix_web::{get, web::{self, Query}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
-use crate::{database::UserExtractor, dtos::{user::{FilterForeignUserDto, FilterUserDto, ForeignUserResponseDto, RequestQueryDto, UserData, UserListResponseDto, UserResponseDto}, Status}, error::{ErrorMessage, HttpError}, extractors::auth::Authenticated, utils::AppState};
+use crate::{database::UserExtractor, dtos::*, error::{ErrorMessage, HttpError}, extractors::auth::Authenticated, utils::{status::Status, AppState}};
 use crate::extractors::auth::RequireAuth;
 
 
