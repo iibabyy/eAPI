@@ -13,7 +13,6 @@ mod error;
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use database::db::DBClient;
-use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use utils::{AppState, config::Config};
 
@@ -23,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     // }
 
-    dotenv().ok();
+    dotenvy::dotenv()?;
     env_logger::init();
     let config = Config::init();
 

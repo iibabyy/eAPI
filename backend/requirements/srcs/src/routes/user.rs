@@ -1,18 +1,15 @@
-use actix_web::{get, web::{self, Query}, HttpResponse};
+use actix_web::{get, web::{self, Data, Path, Query}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
 use crate::{
-    dtos::{*, users::*},
-    database::UserExtractor,
-    extractors::auth::{RequireAuth, Authenticated},
-    error::{ErrorMessage, HttpError},
-    utils::{status::Status, AppState}
+    database::{ProductExtractor, UserExtractor}, dtos::{products::{FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto}, users::*, *}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}
 };
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/users")
+            .service(get_user_products)
             .service(get_me)
 			.service(get_by_id)
 			.service(get_all)
@@ -46,7 +43,7 @@ async fn get_by_id(
     Ok(HttpResponse::Ok().json(
         ForeignUserResponseDto {
             status: Status::Success,
-            data: ForeignUserData { user: filtered_user },
+            data: filtered_user,
         }
     ))
 }
@@ -59,12 +56,72 @@ async fn get_me(
 
     let response_data = UserResponseDto {
         status: Status::Success,
-        data: UserData {
-            user: filtered_user,
-        },
+        data: filtered_user,
     };
 
     Ok(HttpResponse::Ok().json(response_data))
+}
+
+#[get("/me/products/", wrap = "RequireAuth")]
+async fn get_my_products(
+    user: Authenticated,
+    query: Query<RequestQueryDto>,
+    data: Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+
+    let page = query.page.unwrap_or(1);
+    let limit = query.limit.unwrap_or(10);
+
+    let products: Vec<ProductDto> = data.db_client
+        .get_products_by_user(
+            &user.id,
+            page as u32,
+            limit
+        )
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+        .iter()
+        .map(|product| ProductDto::from(product))
+        .collect();
+
+    Ok(
+        HttpResponse::Ok().json( ProductListResponseDto {
+            status: Status::Success,
+            results: products.len(),
+            data: products,
+        })
+    )
+}
+
+#[get("/{user_id}/products/", wrap = "RequireAuth")]
+async fn get_user_products(
+    user_id: Path<Uuid>,
+    query: Query<RequestQueryDto>,
+    data: Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+
+    let page = query.page.unwrap_or(1);
+    let limit = query.limit.unwrap_or(10);
+
+    let products: Vec<FilterProductDto> = data.db_client
+        .get_products_by_user(
+            &user_id,
+            page as u32,
+            limit
+        )
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+        .iter()
+        .map(|product| FilterProductDto::filter(product))
+        .collect();
+
+    Ok(
+        HttpResponse::Ok().json( FilterProductListResponseDto {
+            status: Status::Success,
+            results: products.len(),
+            data: products,
+        })
+    )
 }
 
 // #[delete("/{user_id}", wrap = "RequireAuth")]
@@ -104,7 +161,7 @@ async fn get_all(
         UserListResponseDto {
             status: Status::Success,
             results: users.len(),
-            users,
+            data: users,
         })
     )
 
@@ -136,7 +193,7 @@ mod tests {
         error::{ErrorMessage, ErrorResponse},
         utils::{
             password,
-            test_utils::{test_config, init_test_users},
+            test_utils::{init_test_products, init_test_users, test_config},
             token,
         },
     };
@@ -160,7 +217,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_by_id),
         )
         .await;
 
@@ -168,7 +225,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/{}/", user_id))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -179,7 +236,7 @@ mod tests {
 
         let user_response: ForeignUserResponseDto =
             serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
-        let responded_user = user_response.data.user;
+        let responded_user = user_response.data;
 
         assert_eq!(responded_user.email, initial_user.email);
     }
@@ -201,7 +258,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_by_id),
         )
         .await;
 
@@ -209,7 +266,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", Uuid::new_v4()))
+            .uri(&format!("/{}/", Uuid::new_v4()))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -239,7 +296,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_by_id),
         )
         .await;
 
@@ -247,7 +304,7 @@ mod tests {
             .insert_header(
                 (HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str("Bearer invalid-token").unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/{}/", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -282,12 +339,12 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_by_id),
         )
         .await;
 
         let req = test::TestRequest::get()
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/{}/", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -325,7 +382,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_by_id),
         )
         .await;
 
@@ -333,7 +390,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/{}/", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -371,7 +428,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_me),
         )
         .await;
 
@@ -379,7 +436,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/me/")
+            .uri("/me/")
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -390,7 +447,7 @@ mod tests {
 
         let user_response: UserResponseDto =
             serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
-        let user = user_response.data.user;
+        let user = user_response.data;
 
         assert_eq!(user_id.to_string(), user.id);
     }
@@ -406,7 +463,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_me),
         )
         .await;
 
@@ -414,7 +471,7 @@ mod tests {
             .insert_header(
                 (HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str("Bearer invalid-token").unwrap())
             )
-            .uri("/users/me/")
+            .uri("/me/")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -448,11 +505,11 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_me),
         )
         .await;
 
-        let req = test::TestRequest::get().uri("/users/me/").to_request();
+        let req = test::TestRequest::get().uri("/me/").to_request();
 
         let result = test::try_call_service(&app, req).await.err();
 
@@ -489,7 +546,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config),
+                .service(super::get_me),
         )
         .await;
 
@@ -497,7 +554,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
             )
-            .uri("/users/me/")
+            .uri("/me/")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -541,7 +598,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config)
+                .service(super::get_all)
         )
         .await;
 
@@ -549,7 +606,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/?page=1&limit=2")
+            .uri("/?page=1&limit=2")
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -561,7 +618,7 @@ mod tests {
         let user_list_response: UserListResponseDto =
             serde_json::from_slice(&body).expect("Failed to deserialize users response from JSON");
 
-        assert_eq!(user_list_response.users.len(), 2);
+        assert_eq!(user_list_response.data.len(), 2);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -579,7 +636,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config) 
+                .service(super::get_all) 
         )
         .await;
 
@@ -587,7 +644,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/")
+            .uri("/")
             .to_request();
 
         let result = test::try_call_service(&app, req).await. unwrap();
@@ -613,7 +670,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config)
+                .service(super::get_all)
         )
         .await;
 
@@ -621,7 +678,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_static("Bearer invalid-token"))
             )
-            .uri("/users/")
+            .uri("/")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -655,11 +712,11 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .configure(super::config)
+                .service(super::get_all)
         )
         .await;
 
-        let req = test::TestRequest::get().uri("/users/").to_request();
+        let req = test::TestRequest::get().uri("/").to_request();
 
         let result = test::try_call_service(&app, req).await.err();
 
@@ -679,6 +736,51 @@ mod tests {
                 panic!("Service call succeeded, but an error was expected.");
             }
         }
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn get_user_product_with_valid_id(pool: Pool<Postgres>) {
+        let (data, _, _) = init_test_products(&pool).await;
+        let db_client = DBClient::new(pool.clone());
+        let config = test_config();
+
+        let token = token::create_token(
+                &data.user_id.to_string(),
+                config.secret_key.as_bytes(),
+                60
+            ) .unwrap();
+
+        let initial_user = db_client.get_user(data.user_id).await.expect("Failed to get user by id").unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    env: config.clone(),
+                    db_client,
+                }))
+                .service(super::get_user_products),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .insert_header(
+                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            )
+            .uri(&format!("/{}/products/", data.user_id))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let body = test::read_body(resp).await;
+
+        let response: ProductListResponseDto =
+            serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
+        let products = response.data;
+
+        assert_eq!(products.len(), 1);
+        assert_eq!(products[0].id, data.product_id);
     }
 
 }

@@ -298,7 +298,7 @@ impl ProductExtractor for DBClient {
 		&self,
 		name: T,
 		user_id: &Uuid,
-		description: Option<String>,
+		description: Option<&String>,
 		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error> {
 		let product = sqlx::query_as!(
@@ -633,7 +633,7 @@ mod products_tests {
 		let description = Some("A beautiful car".to_string());
 		let price_in_cents = 1200;
 
-		db_client.save_product(name, &user_id, description.clone(), price_in_cents).await.unwrap();
+		db_client.save_product(name, &user_id, description.as_ref(), price_in_cents).await.unwrap();
 
 		let products = db_client
 			.get_products_by_name(name.to_string(), 1, 5)

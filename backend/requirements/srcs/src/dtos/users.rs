@@ -52,8 +52,8 @@ impl FilterForeignUserDto {
         FilterForeignUserDto {
             email: user.email.to_owned(),
             name: user.name.to_owned(),
-            created_at: user.created_at.unwrap(),
-            updated_at: user.updated_at.unwrap(),
+            created_at: user.created_at,
+            updated_at: user.updated_at,
         }
     }
 
@@ -81,44 +81,34 @@ impl FilterUserDto {
             email: user.email.to_owned(),
             name: user.name.to_owned(),
             sold_in_cents: user.sold_in_cents,
-            created_at: user.created_at.unwrap(),
-            updated_at: user.updated_at.unwrap(),
+            created_at: user.created_at,
+            updated_at: user.updated_at,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserData {
-    pub user: FilterUserDto,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ForeignUserData {
-    pub user: FilterForeignUserDto,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct UserResponseDto {
     pub status: Status,
-    pub data: UserData,
+    pub data: FilterUserDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ForeignUserResponseDto {
     pub status: Status,
-    pub data: ForeignUserData,
+    pub data: FilterForeignUserDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserListResponseDto {
     pub status: Status,
-    pub users: Vec<FilterForeignUserDto>,
+    pub data: Vec<FilterForeignUserDto>,
     pub results: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginResponseDto {
     pub status: Status,
-    pub data: UserData,
+    pub data: FilterUserDto,
     pub token: String,
 }

@@ -79,7 +79,7 @@ async fn login (
 		 	.cookie(cookie)
 			.json(LoginResponseDto {
 				status: Status::Success,
-				data: UserData { user: filtered_user },
+				data: filtered_user ,
 				token,
 			})
 	)
@@ -112,9 +112,7 @@ async fn register(
 	match result {
 		Ok(user) => Ok(HttpResponse::Created().json(UserResponseDto {
 			status: Status::Success,
-			data: UserData {
-				user: FilterUserDto::filter_user(&user),
-			}
+			data: FilterUserDto::filter_user(&user),
 		})),
 
 		Err(sqlx::Error::Database(db_err)) => {
@@ -192,7 +190,7 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::register)
 		)
 		.await;
 
@@ -201,7 +199,7 @@ use uuid::Uuid;
 		let password = "password".to_string();
 
 		let request = test::TestRequest::post()
-			.uri("/auth/register")
+			.uri("/register")
 			.set_json(RegisterUserDto {
 				name: name.clone(),
 				email: email.clone(),
@@ -218,7 +216,7 @@ use uuid::Uuid;
 		let response_data = serde_json::from_slice::<UserResponseDto>(&body)
 			.expect("Failed to deserialize user response from JSON");
 
-		let user = &response_data.data.user;
+		let user = &response_data.data;
 
 		assert_eq!(user.name, name);
 		assert_eq!(user.email, email);
@@ -245,12 +243,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::register)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/register")
+			.uri("/register")
 			.set_json(RegisterUserDto {
 				name: name.clone(),
 				email: email.clone(),
@@ -296,12 +294,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(LoginUserDto {
 				email: email.clone(),
 				password: password.clone(),
@@ -316,7 +314,7 @@ use uuid::Uuid;
 		let response_data = serde_json::from_slice::<LoginResponseDto>(&body)
 			.expect("Failed to deserialize Json");
 		
-		let user = response_data.data.user;
+		let user = response_data.data;
 
 		assert_eq!(email, user.email);
 		assert_eq!(name, user.name);
@@ -345,12 +343,12 @@ use uuid::Uuid;
 					env: config.clone(),
 					db_client: db_client.clone(),
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(LoginUserDto {
 				email: email.clone(),
 				password: password.clone(),
@@ -408,12 +406,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(LoginUserDto {
 				email: "nonexistent@gmail.com".to_string(),
 				password: "password".to_string(),
@@ -448,12 +446,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(LoginUserDto {
 				email: "nonexistent@gmail.com".to_string(),
 				password: "password".to_string(),
@@ -488,12 +486,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(LoginUserDto {
 				email: "ayarab@gmail.com".to_string(),
 				password: "wrongpassword".to_string(),
@@ -525,12 +523,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.to_request();
 
 		let response = test::call_service(&app, request).await;
@@ -556,12 +554,12 @@ use uuid::Uuid;
 					env: config,
 					db_client,
 				}))
-				.configure(super::config)
+				.service(super::login)
 		)
 		.await;
 
 		let request = test::TestRequest::post()
-			.uri("/auth/login")
+			.uri("/login")
 			.set_json(json!({}))
 			.to_request();
 
@@ -588,12 +586,12 @@ use uuid::Uuid;
 				env: config.clone(),
 				db_client,
 			}))
-			.configure(super::config),
+			.service(super::logout),
         )
         .await;
 		
         let req = test::TestRequest::post()
-            .uri("/auth/logout")
+            .uri("/logout")
             .to_request();
 
         let resp = test::call_service(&app, req).await;

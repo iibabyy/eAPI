@@ -1,4 +1,5 @@
 use actix_web::cookie::Key;
+use dotenvy_macro::dotenv;
 use lazy_static::lazy_static;
 use std::env;
 
@@ -31,7 +32,7 @@ impl Config {
 }
 
 fn secret_key() -> String {
-	env::var("SECRET_KEY").expect("SECRET_KEY must be set")
+	dotenv!("SECRET_KEY").to_string()
 }
 
 fn jwt_max_age() -> i64 {
@@ -56,11 +57,11 @@ fn redis_url() -> String  {
 }
 
 fn database_url() -> String {
-	let db_user = env::var("POSTGRES_USER").expect("POSTGRES_USER must be set");
-	let db_password = env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
+	let db_user = dotenv!("POSTGRES_USER");
+	let db_password = dotenv!("POSTGRES_PASSWORD");
 	let db_host = env::var("POSTGRES_HOST").unwrap_or("localhost".to_string());
 	let db_port = env::var("POSTGRES_PORT").unwrap_or("5432".to_string()).parse::<u16>().expect("POSTGRES_PORT: invalid value");
-	let db_name = env::var("POSTGRES_DB").expect("POSTGRES_DB must be set");
+	let db_name = dotenv!("POSTGRES_DB");
 
 	format!(
 		"postgres://{}:{}@{}:{}/{}",

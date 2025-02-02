@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
 	email VARCHAR(255) NOT NULL CHECK(email <> '') UNIQUE,
 	password VARCHAR(255) NOT NULL CHECK(password <> ''),
 	sold_in_cents BIGINT NOT NULL DEFAULT 0 CHECK(sold_in_cents >= 0),
-	created_at TIMESTAMPTZ DEFAULT NOW(),
-	updated_at TIMESTAMPTZ DEFAULT NOW()
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 

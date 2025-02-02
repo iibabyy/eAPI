@@ -1,4 +1,4 @@
-// use actix_web::{get, web::{self, Query}, HttpResponse};
+// use actix_web::{delete, get, post, web::{self, Json, Path, Query}, HttpResponse};
 // use uuid::Uuid;
 // use validator::Validate;
 // use crate::{
@@ -12,14 +12,18 @@
 
 // pub(super) fn config(config: &mut web::ServiceConfig) {
 // 	config
-// 		.service(web::scope("/products")
+// 		.service(web::scope("/products") 
+//             .service(self::get_by_id)
+//             .service(self::get_all)
+//             .service(self::delete)
+//             .service(self::create)
 // 		);
 // }
 
 
-// /* --- -------------- */
-// /* --- [ ROUTES ] --- */
-// /* --- -------------- */
+// /* ------------ ---------- ------------ */
+// /* ------------ [ ROUTES ] ------------ */
+// /* ------------ ---------- ------------ */
 
 // #[get("/{product_id}/", wrap = "RequireAuth")]
 // async fn get_by_id(
@@ -36,43 +40,44 @@
 //         return Err(HttpError::not_found(ErrorMessage::ProductNoLongerExist))
 //     }
 
-//     let filtered_product = FilterForeignproductDto::filter_product(&product.unwrap());
+//     let product = FilterProductDto::filter(&product.unwrap());
 
 //     Ok(HttpResponse::Ok().json(
-//         ForeignproductResponseDto {
+//         FilterProductResponseDto {
 //             status: Status::Success,
-//             data: filtered_product,
+//             data: product,
 //         }
 //     ))
 // }
 
-// #[get("/me/", wrap = "RequireAuth")]
-// async fn get_me(
-//     product: Authenticated,
+// #[delete("/{product_id}/", wrap = "RequireAuth")]
+// async fn delete(
+//     user: Authenticated,
+// 	product_id: Path<Uuid>,
+//     data: web::Data<AppState>,
 // ) -> Result<HttpResponse, HttpError> {
-//     let filtered_product = FilterproductDto::filter_product(&product);
+// 	let product = data.db_client
+// 		.get_product(product_id.into_inner())
+// 		.await
+// 		.map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-//     let response_data = productResponseDto {
-//         status: Status::Success,
-//         data: productData {
-//             product: filtered_product,
-//         },
-//     };
+// 	if product.is_none() { return Err(HttpError::not_found(ErrorMessage::ProductNotFound)) }
 
-//     Ok(HttpResponse::Ok().json(response_data))
+// 	let product = product.unwrap();
+// 	if product.user_id != user.id {
+// 		return Err(HttpError::unauthorized(ErrorMessage::PermissionDenied))
+// 	}
+
+// 	let deleted_product = data.db_client
+// 		.delete_product(&product.id)
+// 		.await
+// 		.map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+
+// 	Ok(
+//         HttpResponse::NoContent().finish()
+//     )
+
 // }
-
-// // #[delete("/{product_id}", wrap = "RequireAuth")]
-// // async fn delete(
-// //     id: web::Path<i32>,
-// //     data: web::Data<AppState>
-// // ) -> HttpResponse {
-// //     match db_services::products::delete_product(id.into_inner(), &data.db_client).await {
-// //         Ok(_) => HttpResponse::Ok().body(format!("product deleted.")),
-// //         Err(err) => err,
-// //     }
-// // }
-
 
 // #[get("/", wrap = "RequireAuth")]
 // async fn get_all(
@@ -86,21 +91,51 @@
 //     let page = query.page.unwrap_or(1);
 //     let limit = query.limit.unwrap_or(10);
 
-//     let products: Vec<FilterForeignproductDto> = data
+//     let products: Vec<FilterProductDto> = data
 //         .db_client
 //         .get_all_products(page as u32, limit)
 //         .await
 //         .map_err(|_err| HttpError::server_error(ErrorMessage::ServerError.to_string()))?
 //         .iter()
-//         .map(|product| FilterForeignproductDto::filter_product(product))
+//         .map(|product| FilterProductDto::filter(product))
 //         .collect();
 
 //     Ok(HttpResponse::Ok().json(
-//         productListResponseDto {
+//         FilterProductListResponseDto {
 //             status: Status::Success,
 //             results: products.len(),
-//             products,
+//             data: products,
 //         })
+//     )
+
+// }
+
+// #[post("/", wrap = "RequireAuth")]
+// async fn create(
+//     product: Json<CreateProductDto>,
+//     data: web::Data<AppState>,
+// ) -> Result<HttpResponse, HttpError> {
+//     product
+//         .validate()
+//         .map_err(|err| HttpError::bad_request(err.to_string()))?;
+
+//     let product = data.db_client
+//         .save_product(
+//             &product.name,
+//             &product.user_id,
+//             product.description.as_ref(),
+//             product.price_in_cents
+//         )
+//         .await
+//         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+
+//     Ok(
+//         HttpResponse::Ok().json(
+//             ProductResponseDto {
+//                 status: Status::Success,
+//                 data: ProductDto::from(&product)
+//             }
+//         )
 //     )
 
 // }
@@ -145,7 +180,7 @@
 //         let config = test_config();
 
 //         let token =
-//             token::create_token(&product_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+//             token::create_token(&product_id.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
 
 //         let app = test::init_service(
 //             App::new()
@@ -170,9 +205,9 @@
 
 //         let body = test::read_body(resp).await;
 
-//         let product_response: productResponseDto =
+//         let product_response: ProductResponseDto =
 //             serde_json::from_slice(&body).expect("Failed to deserialize product response from JSON");
-//         let product = product_response.data.product;
+//         let product = product_response.data;
 
 //         assert_eq!(product_id.to_string(), product.id);
 //     }

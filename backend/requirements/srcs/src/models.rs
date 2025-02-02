@@ -10,8 +10,8 @@ pub struct User {
     pub password: String,
     pub sold_in_cents: i64,
 
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 

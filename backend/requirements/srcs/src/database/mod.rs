@@ -85,7 +85,7 @@ pub trait ProductExtractor {
 		&self,
 		name: T,
 		user_id: &Uuid,
-		description: Option<String>,
+		description: Option<&String>,
 		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error>;
 

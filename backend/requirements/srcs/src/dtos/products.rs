@@ -31,33 +31,71 @@ pub struct ProductDto {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ProductData {
-    pub product: ProductDto,
+impl ProductDto {
+    pub fn from(product: &Product) -> Self {
+        ProductDto {
+            id: product.id,
+            user_id: product.user_id,
+            name: product.name.to_owned(),
+            description: product.description.to_owned(),
+            price_in_cents: product.price_in_cents,
+
+            created_at: product.created_at,
+            updated_at: product.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterProductDto {
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub price_in_cents: i64,
+
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl FilterProductDto {
+    pub fn filter(product: &Product) -> Self {
+        FilterProductDto {
+            id: product.id,
+            user_id: product.user_id,
+            name: product.name.to_owned(),
+            description: product.description.to_owned(),
+            price_in_cents: product.price_in_cents,
+
+            created_at: product.created_at,
+            updated_at: product.updated_at,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProductResponseDto {
     pub status: Status,
-    pub data: ProductData,
+    pub data: ProductDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ForeignProductResponseDto {
+pub struct FilterProductResponseDto {
     pub status: Status,
-    pub data: ProductDto,
+    pub data: FilterProductDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProductListResponseDto {
     pub status: Status,
-    pub products: Vec<ProductDto>,
+    pub data: Vec<ProductDto>,
     pub results: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LoginResponseDto {
+pub struct FilterProductListResponseDto {
     pub status: Status,
-    pub data: ProductData,
-    pub token: String,
+    pub data: Vec<FilterProductDto>,
+    pub results: usize,
 }

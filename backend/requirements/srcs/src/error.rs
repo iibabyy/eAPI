@@ -41,6 +41,8 @@ pub enum ErrorMessage {
     TokenNotProvided,
     RefreshTokenNotProvided,
     PermissionDenied,
+    ProductNotFound,
+    UserNotFound,
 }
 
 impl ToString for ErrorMessage {
@@ -72,6 +74,8 @@ impl ErrorMessage {
             ErrorMessage::TokenNotProvided => "You are not logged in, please provide token".to_string(),
             ErrorMessage::RefreshTokenNotProvided => "Refresh token not found, please log in".to_string(),
             ErrorMessage::PermissionDenied => "You are not allowed to perform this action".to_string(),
+            ErrorMessage::ProductNotFound => "Product not found".to_string(),
+            ErrorMessage::UserNotFound => "User not found".to_string(),
         }
     }
 }

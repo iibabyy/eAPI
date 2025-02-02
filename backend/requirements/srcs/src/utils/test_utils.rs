@@ -115,7 +115,7 @@ pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, Tes
 			.save_product(
 				product.name,
 				&product.user_id,
-				product.description,
+				product.description.as_ref(),
 				product.price_in_cents
 			)
 			.await
