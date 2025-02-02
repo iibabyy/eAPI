@@ -93,6 +93,11 @@ pub struct UserData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ForeignUserData {
+    pub user: FilterForeignUserDto,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserResponseDto {
     pub status: Status,
     pub data: UserData,
@@ -101,7 +106,7 @@ pub struct UserResponseDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ForeignUserResponseDto {
     pub status: Status,
-    pub data: FilterForeignUserDto,
+    pub data: ForeignUserData,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

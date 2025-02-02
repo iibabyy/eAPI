@@ -143,6 +143,11 @@ impl HttpError {
                 message: self.message.into(),
             }),
             
+			404 => HttpResponse::NotFound().json(Response {
+                status: Status::Failure,
+                message: self.message.into(),
+            }),
+            
 			409 => HttpResponse::Conflict().json(Response {
                 status: Status::Failure,
                 message: self.message.into(),

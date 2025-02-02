@@ -13,11 +13,6 @@
 // pub(super) fn config(config: &mut web::ServiceConfig) {
 // 	config
 // 		.service(web::scope("/products")
-//             .service(get_me)
-// 			.service(get_by_id)
-// 			.service(get_all)
-// 			// .service(delete)
-// 			// .service(add_sold)
 // 		);
 // }
 
@@ -26,7 +21,7 @@
 // /* --- [ ROUTES ] --- */
 // /* --- -------------- */
 
-// #[get("/{product_id}", wrap = "RequireAuth")]
+// #[get("/{product_id}/", wrap = "RequireAuth")]
 // async fn get_by_id(
 //     id: web::Path<Uuid>,
 //     data: web::Data<AppState>
@@ -51,7 +46,7 @@
 //     ))
 // }
 
-// #[get("/me", wrap = "RequireAuth")]
+// #[get("/me/", wrap = "RequireAuth")]
 // async fn get_me(
 //     product: Authenticated,
 // ) -> Result<HttpResponse, HttpError> {
