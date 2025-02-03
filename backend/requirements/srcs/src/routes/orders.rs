@@ -1,5 +1,7 @@
 // use actix_web::{get, post, web::{self, Json}, HttpResponse};
 
+// use crate::{error::HttpError, utils::AppState};
+
 // pub fn config(config: &mut web::ServiceConfig) {
 // 	config
 // 		.service(web::scope("/orders")
@@ -18,12 +20,10 @@
 // async fn get_by_id(
 // 	id: web::Path<i32>,
 // 	data: web::Data<AppState>
-// ) -> HttpResponse {
+// ) -> Result<HttpResponse, HttpError> {
 
-// 	let order= match db_services::order::get_order(id.into_inner(), &data.db).await {
-// 		Ok(order) => order,
-// 		Err(err) => return err,
-// 	};
+// 	let order = data.db_client
+// 		.get
 
 // 	HttpResponse::Ok().json(order)
 // }

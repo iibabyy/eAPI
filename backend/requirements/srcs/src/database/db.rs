@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Product, User};
+use crate::models::{Order, Product, User};
 
-use super::{ProductExtractor, UserExtractor};
+use super::{OrderExtractor, ProductExtractor, UserExtractor};
 
 
 #[derive(Debug, Clone)]
@@ -165,6 +165,23 @@ impl UserExtractor for DBClient {
 		Ok(user)
 	}
 
+	async fn delete_user(
+		&self,
+		user_id: &Uuid,
+	) -> Result<(), sqlx::Error> {
+		sqlx::query!(
+			r#"
+			DELETE FROM users
+			WHERE id = $1
+			"#,
+			user_id,
+		)
+		.execute(self.pool())
+		.await?;
+
+		Ok(())
+	}
+
 }
 
 
@@ -225,20 +242,20 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 	
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			WHERE name = $1
-			LIMIT $2
-			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				WHERE name = $1
+				LIMIT $2
+				OFFSET $3
+				"#,
+				name,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -251,18 +268,18 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			LIMIT $1
-			OFFSET $2
-			"#,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				LIMIT $1
+				OFFSET $2
+				"#,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -276,20 +293,20 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			WHERE starts_with(name, $1)
-			LIMIT $2
-			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				WHERE starts_with(name, $1)
+				LIMIT $2
+				OFFSET $3
+				"#,
+				name,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -302,19 +319,19 @@ impl ProductExtractor for DBClient {
 		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error> {
 		let product = sqlx::query_as!(
-			Product,
-			r#"
-			INSERT INTO products ( name, user_id, description, price_in_cents )
-			VALUES ( $1, $2, $3, $4 )
-			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
-			"#,
-			name.into(),
-			user_id,
-			description,
-			price_in_cents,
-		)
-		.fetch_one(&self.pool)
-		.await?;
+				Product,
+				r#"
+				INSERT INTO products ( name, user_id, description, price_in_cents )
+				VALUES ( $1, $2, $3, $4 )
+				RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
+				"#,
+				name.into(),
+				user_id,
+				description,
+				price_in_cents,
+			)
+			.fetch_one(&self.pool)
+			.await?;
 
 		Ok(product)
 	}
@@ -322,20 +339,124 @@ impl ProductExtractor for DBClient {
 	async fn delete_product(
 		&self,
 		user_id: &Uuid,
-	) -> Result<Product, sqlx::Error> {
-		let product = sqlx::query_as!(
-			Product,
+	) -> Result<(), sqlx::Error> {
+		sqlx::query!(
 			r#"
 			DELETE FROM products
 			WHERE id = $1
-			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
 			"#,
 			user_id,
 		)
-		.fetch_one(&self.pool)
+		.execute(&self.pool)
 		.await?;
 
-		Ok(product)
+		Ok(())
+	}
+
+}
+
+#[async_trait]
+impl OrderExtractor for DBClient {
+	async fn get_order(
+		&self,
+		order_id: &Uuid,
+	) -> Result<Option<Order>, sqlx::Error> {
+		let order = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				WHERE id = $1
+				"#,
+				order_id,
+			)
+			.fetch_optional(self.pool())
+			.await?;
+		
+		Ok(order)
+	}
+
+	async fn get_all_orders(
+		&self,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error> {
+		let offset = (page - 1) * limit as u32;
+
+		let orders = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				"#
+			)
+			.fetch_all(self.pool())
+			.await?;
+
+		Ok(orders)
+	}
+
+	async fn save_order(
+		&self,
+		user_id: &Uuid,
+		product_id: &Uuid,
+		order_details_id: Option<&Uuid>,
+	) -> Result<Order, sqlx::Error> {
+		
+		let order = sqlx::query_as!(
+				Order,
+				r#"
+				INSERT INTO orders( user_id, product_id, order_details_id )
+				VALUES ( $1, $2, $3 )
+				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at
+				"#,
+				user_id,
+				product_id,
+				order_details_id,
+			)
+			.fetch_one(self.pool())
+			.await?;
+
+		Ok(order)
+	}
+
+	async fn delete_order(
+		&self,
+		order_id: &Uuid,
+	) -> Result<(), sqlx::Error> {
+
+		sqlx::query!(
+			r#"
+			DELETE FROM orders
+			WHERE id = $1
+			"#,
+			order_id,
+		)
+		.execute(self.pool())
+		.await?;
+
+		Ok(())
+	}
+
+	async fn get_orders_by_user(
+		&self,
+		user_id: &Uuid,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error> {
+		let offset = (page - 1) * limit as u32;
+
+		let orders = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				"#
+			)
+			.fetch_all(self.pool())
+			.await?;
+
+		Ok(orders)
 	}
 
 }
