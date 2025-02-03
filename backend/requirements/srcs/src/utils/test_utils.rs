@@ -71,7 +71,7 @@ pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 
 pub async fn assert_user_infos(id: impl ToString, name: impl ToString, email: impl ToString, db_client: &DBClient) {
 	let user = db_client
-		.get_user(Uuid::from_str(&id.to_string()).expect("Invalid id"))
+		.get_user(&Uuid::from_str(&id.to_string()).expect("Invalid id"))
 		.await
 		.expect("Failed to get user")
 		.expect("User not found");

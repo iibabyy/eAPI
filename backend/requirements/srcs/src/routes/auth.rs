@@ -387,7 +387,7 @@ use uuid::Uuid;
 		assert_eq!(refresh_token_subject, authentication_token_subject);
 
 		let token_subject = db_client
-			.get_user(Uuid::parse_str(&authentication_token_subject).unwrap())
+			.get_user(&Uuid::parse_str(&authentication_token_subject).unwrap())
 			.await
 			.expect("Failed to get user")
 			.expect("User not found");

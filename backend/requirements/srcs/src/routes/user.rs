@@ -33,7 +33,7 @@ async fn get_by_id(
 ) -> Result <HttpResponse, HttpError> {
     let user = data
         .db_client
-        .get_user(id.into_inner())
+        .get_user(&id.into_inner())
         .await
         .map_err(|err| HttpError::server_error(ErrorMessage::ServerError))?;
 
@@ -152,7 +152,7 @@ mod tests {
         let token =
             token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
 
-        let initial_user = db_client.get_user(user_id).await.expect("Failed to get user by id").unwrap();
+        let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
         let app = test::init_service(
             App::new()
@@ -193,7 +193,7 @@ mod tests {
         let token =
             token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
 
-        let initial_user = db_client.get_user(user_id).await.expect("Failed to get user by id").unwrap();
+        let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
         let app = test::init_service(
             App::new()

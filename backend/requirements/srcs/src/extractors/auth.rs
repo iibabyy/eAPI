@@ -87,7 +87,7 @@ where
 			let user_id = Uuid::parse_str(&user_id).unwrap();
 			let result = cloned_app_state
 				.db_client
-				.get_user(user_id)
+				.get_user(&user_id)
 				.await
 				.map_err(|e| ErrorInternalServerError(HttpError::server_error(e.to_string())))?;
 

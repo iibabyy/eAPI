@@ -10,7 +10,7 @@ pub mod psql;
 pub trait UserExtractor {
 	async fn get_user(
 		&self,
-		user_id: Uuid,
+		user_id: &Uuid,
 	) -> Result<Option<User>, sqlx::Error>;
 
 	async fn get_user_by_email(
@@ -47,14 +47,14 @@ pub trait UserExtractor {
 	async fn delete_user(
 		&self,
 		user_id: &Uuid,
-	) -> Result<(), sqlx::Error>;
+	) -> Result<(), Option<sqlx::Error>>;
 }
 
 #[async_trait]
 pub trait ProductExtractor {
 	async fn get_product(
 		&self,
-		product_id: Uuid,
+		product_id: &Uuid,
 	) -> Result<Option<Product>, sqlx::Error>;
 
 	async fn get_products_by_name(
@@ -88,7 +88,7 @@ pub trait ProductExtractor {
 	async fn delete_product(
 		&self,
 		product_id: &Uuid,
-	) -> Result<(), sqlx::Error>;
+	) -> Result<(), Option<sqlx::Error>>;
 
 	async fn get_products_by_user(
 		&self,
@@ -121,7 +121,7 @@ pub trait OrderExtractor {
 	async fn delete_order(
 		&self,
 		order: &Uuid,
-	) -> Result<(), sqlx::Error>;
+	) -> Result<(), Option<sqlx::Error>>;
 
 	async fn get_orders_by_user(
 		&self,
