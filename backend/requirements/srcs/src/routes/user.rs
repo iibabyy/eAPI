@@ -132,7 +132,7 @@ mod tests {
     use sqlx::{Pool, Postgres};
 
     use crate::{
-        database::db::DBClient,
+        database::psql::DBClient,
         error::{ErrorMessage, ErrorResponse},
         utils::{
             password,

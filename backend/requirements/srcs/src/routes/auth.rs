@@ -177,7 +177,7 @@ use actix_web::{http::{self, header::HeaderName}, test, App};
 	use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-	use crate::{database::db::DBClient, error::ErrorResponse, utils::{constants::REFRESH_TOKEN, test_utils::test_config}};
+	use crate::{database::psql::DBClient, error::ErrorResponse, utils::{constants::REFRESH_TOKEN, test_utils::test_config}};
 	use super::*;
 
 

@@ -138,7 +138,7 @@ mod tests {
 	use actix_web::{cookie::Cookie, get, http::{self, header::{self, HeaderName, HeaderValue}}, test, web::Header, App, HttpResponse};
 	use sqlx::{Pool, Postgres};
 
-	use crate::{database::db::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
+	use crate::{database::psql::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
 
 	use super::*;
 

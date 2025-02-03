@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::models::{Order, Product, User};
 
-pub mod db;
+pub mod psql;
 
 #[async_trait]
 pub trait UserExtractor {

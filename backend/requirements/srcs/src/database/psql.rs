@@ -451,7 +451,9 @@ impl OrderExtractor for DBClient {
 				r#"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
 				FROM orders
-				"#
+				WHERE user_id = $1
+				"#,
+				user_id,
 			)
 			.fetch_all(self.pool())
 			.await?;
@@ -772,6 +774,32 @@ mod products_tests {
 	}
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_product_with_invalid_user_id(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_products(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name = "Car";
+		let user_id = Uuid::new_v4();
+		let description = Some("A beautiful car".to_string());
+		let price_in_cents = 1200;
+
+		let result = db_client.save_product(name, &user_id, description.clone(), price_in_cents).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected, found: {}", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn save_product_but_name_too_long(pool: Pool<Postgres>) {
 		let (data, _, _) = init_test_products(&pool).await;
 		let db_client = DBClient::new(pool);
@@ -786,6 +814,152 @@ mod products_tests {
 			.await;
 
 		assert!(result.is_err(), "Expected save to fail");
+	}
+
+}
+
+mod orders_test {
+	use futures_util::TryFutureExt;
+	use crate::utils::test_utils::{init_test_orders};
+	use super::*;
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_order_by_id(pool: Pool<Postgres>) {
+		let (order_data, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let order = db_client
+			.get_order(&order_data.order_id)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get order by id: {}", err))
+			.expect("order not found");
+
+		assert_eq!(order.id, order_data.order_id);
+		assert_eq!(order.product_id, order_data.product_id);
+		assert_eq!(order.user_id, order_data.user_id);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_order_by_nonexistent_id(pool: Pool<Postgres>) {
+		init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let nonexistant_id = Uuid::new_v4();
+
+		let result = db_client
+			.get_order(&nonexistant_id)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get order by id: {}", err));
+
+		assert!(result.is_none(), "Expected order to be None");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders_by_user(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let orders = db_client
+			.get_orders_by_user(&data.user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user: {}", err));
+
+		assert_eq!(orders.len(), 1);
+
+		let order = orders.iter().nth(0).unwrap();
+		assert_eq!(order.user_id, data.user_id);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders_by_nonexistent_user_id(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let nonexistent_user_id = Uuid::new_v4();
+
+		let result = db_client
+			.get_orders_by_user(&nonexistent_user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user id: {}", err));
+
+		assert_eq!(result.len(), 0);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders(pool: Pool<Postgres>) {
+		init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let orders = db_client
+			.get_all_orders(1, 10)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get all orders: {}", err));
+
+		assert_eq!(orders.len(), 3);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order(pool: Pool<Postgres>) {
+		let (data, data2, data3) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let test_user = db_client.save_user(
+			"test_user",
+			"test_user@gmail.com",
+			"test",
+		).await.unwrap();
+
+		let user_id = &test_user.id;
+		let product_id = &data3.product_id;
+		let order_details_id = None;
+
+		db_client.save_order(
+			user_id,
+			product_id,
+			order_details_id,
+		).await.unwrap();
+
+		let orders = db_client
+			.get_orders_by_user(user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user_id: {err}"));
+
+		assert_eq!(orders.len(), 1);
+
+		let order = orders.iter().nth(0).unwrap();
+
+		assert_eq!(order.user_id, user_id.clone());
+		assert_eq!(order.product_id, product_id.clone());
+		assert_eq!(order.order_details_id, order_details_id.copied());
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order_with_invalid_user_id(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let user_id = Uuid::new_v4();
+		let product_id = &data.product_id;
+		let order_details_id = None;
+
+		let result =  db_client.save_order(
+			&user_id,
+			product_id,
+			order_details_id,
+		).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected, found: {}", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
 	}
 
 }

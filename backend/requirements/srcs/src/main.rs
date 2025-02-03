@@ -12,7 +12,7 @@ mod error;
 
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use database::db::DBClient;
+use database::psql::DBClient;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use utils::{AppState, config::Config};
