@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS orders (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-
 --	triggers
 
 --	--	update timestamp	
