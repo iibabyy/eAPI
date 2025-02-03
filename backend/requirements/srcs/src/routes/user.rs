@@ -26,7 +26,7 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 /* --- [ ROUTES ] --- */
 /* --- -------------- */
 
-#[get("/{user_id}/", wrap = "RequireAuth")]
+#[get("/{user_id}", wrap = "RequireAuth")]
 async fn get_by_id(
     id: web::Path<Uuid>,
     data: web::Data<AppState>
@@ -51,7 +51,7 @@ async fn get_by_id(
     ))
 }
 
-#[get("/me/", wrap = "RequireAuth")]
+#[get("/me", wrap = "RequireAuth")]
 async fn get_me(
     user: Authenticated,
 ) -> Result<HttpResponse, HttpError> {
@@ -79,7 +79,7 @@ async fn get_me(
 // }
 
 
-#[get("/", wrap = "RequireAuth")]
+#[get("", wrap = "RequireAuth")]
 async fn get_all(
     data: web::Data<AppState>,
     query: Query<RequestQueryDto>
@@ -168,7 +168,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/users/{}", user_id))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -209,7 +209,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", Uuid::new_v4()))
+            .uri(&format!("/users/{}", Uuid::new_v4()))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -247,7 +247,7 @@ mod tests {
             .insert_header(
                 (HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str("Bearer invalid-token").unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/users/{}", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -287,7 +287,7 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/users/{}", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -333,7 +333,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
             )
-            .uri(&format!("/users/{}/", user_id))
+            .uri(&format!("/users/{}", user_id))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -379,7 +379,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/me/")
+            .uri("/users/me")
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -414,7 +414,7 @@ mod tests {
             .insert_header(
                 (HeaderName::from(http::header::AUTHORIZATION), HeaderValue::from_str("Bearer invalid-token").unwrap())
             )
-            .uri("/users/me/")
+            .uri("/users/me")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -452,7 +452,7 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::get().uri("/users/me/").to_request();
+        let req = test::TestRequest::get().uri("/users/me").to_request();
 
         let result = test::try_call_service(&app, req).await.err();
 
@@ -497,7 +497,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
             )
-            .uri("/users/me/")
+            .uri("/users/me")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -549,7 +549,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/?page=1&limit=2")
+            .uri("/users?page=1&limit=2")
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -587,7 +587,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri("/users/")
+            .uri("/users")
             .to_request();
 
         let result = test::try_call_service(&app, req).await. unwrap();
@@ -621,7 +621,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_static("Bearer invalid-token"))
             )
-            .uri("/users/")
+            .uri("/users")
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -659,7 +659,7 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::get().uri("/users/").to_request();
+        let req = test::TestRequest::get().uri("/users").to_request();
 
         let result = test::try_call_service(&app, req).await.err();
 

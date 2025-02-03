@@ -331,7 +331,7 @@
 //             .insert_header(
 //                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
 //             )
-//             .uri("/products/?page=1&limit=2")
+//             .uri("/products?page=1&limit=2")
 //             .to_request();
 
 //         let resp = test::call_service(&app, req).await;
@@ -369,7 +369,7 @@
 //             .insert_header(
 //                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
 //             )
-//             .uri("/products/")
+//             .uri("/products")
 //             .to_request();
 
 //         let result = test::try_call_service(&app, req).await. unwrap();
@@ -403,7 +403,7 @@
 //             .insert_header(
 //                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_static("Bearer invalid-token"))
 //             )
-//             .uri("/products/")
+//             .uri("/products")
 //             .to_request();
 
 //         let result = test::try_call_service(&app, req).await.err();
@@ -441,7 +441,7 @@
 //         )
 //         .await;
 
-//         let req = test::TestRequest::get().uri("/products/").to_request();
+//         let req = test::TestRequest::get().uri("/products").to_request();
 
 //         let result = test::try_call_service(&app, req).await.err();
 
