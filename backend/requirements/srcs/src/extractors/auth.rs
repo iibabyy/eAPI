@@ -95,7 +95,7 @@ where
 				Some(user) => user,
 				None => return Err(ErrorUnauthorized(ErrorResponse {
 					status: "fail".to_string(),
-					message: ErrorMessage::UserNoLongerExist.to_string(),
+					message: ErrorMessage::UserNotFound.to_string(),
 				}))
 			};
 
