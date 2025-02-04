@@ -33,13 +33,10 @@ async fn get_by_id(
         .db_client
         .get_user(&id.into_inner())
         .await
-        .map_err(|err| HttpError::server_error(ErrorMessage::ServerError))?;
+        .map_err(|err| HttpError::server_error(ErrorMessage::ServerError))?
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNoLongerExist))?;
 
-    if user.is_none() {
-        return Err(HttpError::not_found(ErrorMessage::UserNoLongerExist))
-    }
-
-    let filtered_user = FilterForeignUserDto::filter_user(&user.unwrap());
+    let filtered_user = FilterForeignUserDto::filter_user(&user);
 
     Ok(HttpResponse::Ok().json(
         ForeignUserResponseDto {
@@ -108,7 +105,7 @@ async fn get_user_products(
         .get_user(&user_id)
         .await
         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
-        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNotFound))?;  // check if user exists
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNoLongerExist))?;  // check if user exists
 
     let products: Vec<FilterProductDto> = data.db_client
         .get_products_by_user(

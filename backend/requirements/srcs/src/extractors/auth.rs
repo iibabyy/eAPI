@@ -22,8 +22,8 @@ impl FromRequest for Authenticated {
 
 		let result = match value {
 			Some(user) => Ok(Authenticated(user)),
-			None => Err(ErrorInternalServerError(HttpError::server_error(
-				"Authentication Error"
+			None => Err(ErrorInternalServerError(HttpError::unauthorized(
+				ErrorMessage::UserNotFound
 			)))
 		};
 
