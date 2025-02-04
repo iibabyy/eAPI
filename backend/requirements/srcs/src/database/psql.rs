@@ -821,7 +821,7 @@ mod products_tests {
 		let description = Some("A beautiful car".to_string());
 		let price_in_cents = 1200;
 
-		let result = db_client.save_product(name, &user_id, description.clone(), price_in_cents).await;
+		let result = db_client.save_product(name, &user_id, description.as_ref(), price_in_cents).await;
 
 		match result {
 			Err(sqlx::Error::Database(db_err)) => {

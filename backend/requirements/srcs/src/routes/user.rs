@@ -10,6 +10,7 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/users")
             .service(get_user_products)
+            .service(get_my_products)
             .service(get_me)
 			.service(get_by_id)
 			.service(get_all)
@@ -62,7 +63,7 @@ async fn get_me(
     Ok(HttpResponse::Ok().json(response_data))
 }
 
-#[get("/me/products/", wrap = "RequireAuth")]
+#[get("/me/products", wrap = "RequireAuth")]
 async fn get_my_products(
     user: Authenticated,
     query: Query<RequestQueryDto>,
@@ -93,7 +94,7 @@ async fn get_my_products(
     )
 }
 
-#[get("/{user_id}/products/", wrap = "RequireAuth")]
+#[get("/{user_id}/products", wrap = "RequireAuth")]
 async fn get_user_products(
     user_id: Path<Uuid>,
     query: Query<RequestQueryDto>,
@@ -217,7 +218,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_by_id),
+                .configure(super::config),
         )
         .await;
 
@@ -258,7 +259,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_by_id),
+                .configure(super::config),
         )
         .await;
 
@@ -296,7 +297,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_by_id),
+                .configure(super::config),
         )
         .await;
 
@@ -339,7 +340,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_by_id),
+                .configure(super::config),
         )
         .await;
 
@@ -382,7 +383,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_by_id),
+                .configure(super::config),
         )
         .await;
 
@@ -428,7 +429,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_me),
+                .configure(super::config),
         )
         .await;
 
@@ -463,7 +464,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_me),
+                .configure(super::config),
         )
         .await;
 
@@ -505,7 +506,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_me),
+                .configure(super::config),
         )
         .await;
 
@@ -546,7 +547,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_me),
+                .configure(super::config),
         )
         .await;
 
@@ -598,7 +599,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_all)
+                .configure(super::config)
         )
         .await;
 
@@ -636,7 +637,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_all) 
+                .configure(super::config) 
         )
         .await;
 
@@ -670,7 +671,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_all)
+                .configure(super::config)
         )
         .await;
 
@@ -712,7 +713,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_all)
+                .configure(super::config)
         )
         .await;
 
@@ -750,7 +751,7 @@ mod tests {
                 60
             ) .unwrap();
 
-        let initial_user = db_client.get_user(data.user_id).await.expect("Failed to get user by id").unwrap();
+        let initial_user = db_client.get_user(&data.user_id).await.expect("Failed to get user by id").unwrap();
 
         let app = test::init_service(
             App::new()
@@ -758,7 +759,7 @@ mod tests {
                     env: config.clone(),
                     db_client,
                 }))
-                .service(super::get_user_products),
+                .configure(super::config),
         )
         .await;
 
@@ -766,7 +767,7 @@ mod tests {
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
             )
-            .uri(&format!("/{}/products/", data.user_id))
+            .uri(&format!("/users/{}/products", data.user_id))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -782,5 +783,7 @@ mod tests {
         assert_eq!(products.len(), 1);
         assert_eq!(products[0].id, data.product_id);
     }
+
+    // test my products
 
 }
