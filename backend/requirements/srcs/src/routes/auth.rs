@@ -175,7 +175,7 @@ use actix_web::{http::{self, header::HeaderName}, test, App};
 	use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-	use crate::{database::db::DBClient, error::ErrorResponse, utils::{constants::REFRESH_TOKEN, test_utils::test_config}};
+	use crate::{database::psql::DBClient, error::ErrorResponse, utils::{constants::REFRESH_TOKEN, test_utils::test_config}};
 	use super::*;
 
 
@@ -385,7 +385,7 @@ use uuid::Uuid;
 		assert_eq!(refresh_token_subject, authentication_token_subject);
 
 		let token_subject = db_client
-			.get_user(Uuid::parse_str(&authentication_token_subject).unwrap())
+			.get_user(&Uuid::parse_str(&authentication_token_subject).unwrap())
 			.await
 			.expect("Failed to get user")
 			.expect("User not found");

@@ -4,7 +4,7 @@ use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::database::{db::DBClient, ProductExtractor, UserExtractor};
+use crate::database::{psql::DBClient, OrderExtractor, ProductExtractor, UserExtractor};
 
 use super::config::Config;
 
@@ -12,20 +12,6 @@ pub struct TestUser {
 	name: &'static str,
 	email: &'static str,
 	password: &'static str,
-}
-
-#[derive(PartialEq, Eq)]
-pub struct TestProducts {
-	name: &'static str,
-	user_id: Uuid,
-	description: Option<String>,
-	price_in_cents: i64,
-}
-
-#[derive(Clone, Copy)]
-pub struct TestProductsData {
-	pub product_id: Uuid,
-	pub user_id: Uuid,
 }
 
 pub fn test_config() -> Config {
@@ -83,24 +69,51 @@ pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 
 }
 
-pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, TestProductsData, TestProductsData) {
+pub async fn assert_user_infos(id: impl ToString, name: impl ToString, email: impl ToString, db_client: &DBClient) {
+	let user = db_client
+		.get_user(&Uuid::from_str(&id.to_string()).expect("Invalid id"))
+		.await
+		.expect("Failed to get user")
+		.expect("User not found");
+
+	assert_eq!(user.name, name.to_string());
+	assert_eq!(user.email, email.to_string());
+}
+
+
+#[derive(PartialEq, Eq)]
+pub struct TestProduct {
+	name: &'static str,
+	user_id: Uuid,
+	description: Option<String>,
+	price_in_cents: i64,
+}
+
+#[derive(Clone, Copy)]
+pub struct TestProductData {
+	pub product_id: Uuid,
+	pub user_id: Uuid,
+}
+
+
+pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductData, TestProductData, TestProductData) {
 	let db_client = DBClient::new(pool.clone());
 	let (user_1, user_2, user_3) = init_test_users(pool).await;
 
 	let products = vec![
-		TestProducts {
+		TestProduct {
             name: "shoes",
 			description: None,
 			user_id: user_1,
 			price_in_cents: 35,
         },
-        TestProducts {
+        TestProduct {
             name: "jacket",
 			description: Some("A black jacket".to_string()),
 			user_id: user_2,
 			price_in_cents: 50,
         },
-        TestProducts {
+        TestProduct {
             name: "hat",
 			description: Some("A tall hat".to_string()),
 			user_id: user_3,
@@ -121,7 +134,7 @@ pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, Tes
 			.await
 			.unwrap();
 
-		products_id.push(TestProductsData {
+		products_id.push(TestProductData {
 			product_id: product.id,
 			user_id: product.user_id
 		});
@@ -135,13 +148,69 @@ pub async fn init_test_products(pool: &Pool<Postgres>) -> (TestProductsData, Tes
 
 }
 
-pub async fn assert_user_infos(id: impl ToString, name: impl ToString, email: impl ToString, db_client: &DBClient) {
-	let user = db_client
-		.get_user(Uuid::from_str(&id.to_string()).expect("Invalid id"))
-		.await
-		.expect("Failed to get user")
-		.expect("User not found");
 
-	assert_eq!(user.name, name.to_string());
-	assert_eq!(user.email, email.to_string());
+#[derive(PartialEq, Eq)]
+pub struct TestOrder {
+	user_id: Uuid,
+	product_id: Uuid,
+	order_details_id: Option<Uuid>,
+}
+
+#[derive(Clone, Copy)]
+pub struct TestOrderData {
+	pub order_id: Uuid,
+	pub order_details_id: Option<Uuid>,
+	pub product_id: Uuid,
+	pub user_id: Uuid,
+}
+
+
+pub async fn init_test_orders(pool: &Pool<Postgres>) -> (TestOrderData, TestOrderData, TestOrderData) {
+	let db_client = DBClient::new(pool.clone());
+	let (product_1, product_2, product_3) = init_test_products(pool).await;
+
+	let orders = vec![
+		TestOrder {
+			user_id: product_1.user_id,
+			product_id: product_2.product_id,
+			order_details_id: None,
+        },
+        TestOrder {
+			user_id: product_2.user_id,
+			product_id: product_3.product_id,
+			order_details_id: None,
+        },
+        TestOrder {
+			user_id: product_3.user_id,
+			product_id: product_1.product_id,
+			order_details_id: None,
+        },
+	];
+
+	let mut orders_data = vec![];
+
+	for order in orders {
+		let order = db_client
+			.save_order(
+				&order.user_id,
+				&order.product_id,
+				order.order_details_id.as_ref(),
+			)
+			.await
+			.unwrap();
+
+		orders_data.push(TestOrderData {
+			order_id: order.id,
+			user_id: order.user_id,
+			product_id: order.product_id,
+			order_details_id: order.order_details_id,
+		});
+	}
+
+	(
+		orders_data[0],
+		orders_data[1],
+		orders_data[2],
+	)
+
 }

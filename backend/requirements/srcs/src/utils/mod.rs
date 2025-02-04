@@ -7,7 +7,7 @@ pub mod status;
 
 use config::Config;
 
-use crate::database::db::DBClient;
+use crate::database::psql::DBClient;
 
 #[derive(Clone)]
 pub struct AppState {

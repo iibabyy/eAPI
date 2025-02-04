@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Product, User};
+use crate::models::{Order, Product, User};
 
-use super::{ProductExtractor, UserExtractor};
+use super::{OrderExtractor, ProductExtractor, UserExtractor};
 
 
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ impl DBClient {
 impl UserExtractor for DBClient {
 	async fn get_user(
 		&self,
-		user_id: Uuid,
+		user_id: &Uuid,
 	) -> Result<Option<User>, sqlx::Error> {
 		let user: Option<User> = sqlx::query_as!(
 			User,
@@ -165,6 +165,25 @@ impl UserExtractor for DBClient {
 		Ok(user)
 	}
 
+	async fn delete_user(
+		&self,
+		user_id: &Uuid,
+	) -> Result<(), Option<sqlx::Error>> {
+		let result = sqlx::query!(
+			r#"
+			DELETE FROM users
+			WHERE id = $1
+			RETURNING id
+			"#,
+			user_id,
+		)
+		.fetch_optional(self.pool())
+		.await?
+		.ok_or_else(|| None)?;
+
+		Ok(())
+	}
+
 }
 
 
@@ -172,7 +191,7 @@ impl UserExtractor for DBClient {
 impl ProductExtractor for DBClient {
 	async fn get_product(
 		&self,
-		product_id: Uuid,
+		product_id: &Uuid,
 	) -> Result<Option<Product>, sqlx::Error> {
 		let product: Option<Product> = sqlx::query_as!(
 			Product,
@@ -225,20 +244,20 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 	
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			WHERE name = $1
-			LIMIT $2
-			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				WHERE name = $1
+				LIMIT $2
+				OFFSET $3
+				"#,
+				name,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -251,18 +270,18 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			LIMIT $1
-			OFFSET $2
-			"#,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				LIMIT $1
+				OFFSET $2
+				"#,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -276,20 +295,20 @@ impl ProductExtractor for DBClient {
 		let offset = (page - 1) * limit as u32;
 
 		let products: Vec<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
-			FROM products
-			WHERE starts_with(name, $1)
-			LIMIT $2
-			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
-		)
-		.fetch_all(&self.pool)
-		.await?;
+				Product,
+				r#"
+				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				FROM products
+				WHERE starts_with(name, $1)
+				LIMIT $2
+				OFFSET $3
+				"#,
+				name,
+				limit as i64,
+				offset as i64,
+			)
+			.fetch_all(&self.pool)
+			.await?;
 
 		Ok(products)
 	}
@@ -302,19 +321,19 @@ impl ProductExtractor for DBClient {
 		price_in_cents: i64,
 	) -> Result<Product, sqlx::Error> {
 		let product = sqlx::query_as!(
-			Product,
-			r#"
-			INSERT INTO products ( name, user_id, description, price_in_cents )
-			VALUES ( $1, $2, $3, $4 )
-			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
-			"#,
-			name.into(),
-			user_id,
-			description,
-			price_in_cents,
-		)
-		.fetch_one(&self.pool)
-		.await?;
+				Product,
+				r#"
+				INSERT INTO products ( name, user_id, description, price_in_cents )
+				VALUES ( $1, $2, $3, $4 )
+				RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
+				"#,
+				name.into(),
+				user_id,
+				description,
+				price_in_cents,
+			)
+			.fetch_one(&self.pool)
+			.await?;
 
 		Ok(product)
 	}
@@ -322,20 +341,130 @@ impl ProductExtractor for DBClient {
 	async fn delete_product(
 		&self,
 		user_id: &Uuid,
-	) -> Result<Product, sqlx::Error> {
-		let product = sqlx::query_as!(
-			Product,
+	) -> Result<(), Option<sqlx::Error>> {
+		let product = sqlx::query!(
 			r#"
 			DELETE FROM products
 			WHERE id = $1
-			RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
+			RETURNING id
 			"#,
 			user_id,
 		)
-		.fetch_one(&self.pool)
-		.await?;
+		.fetch_optional(&self.pool)
+		.await?
+		.ok_or_else(|| None)?;
 
-		Ok(product)
+		Ok(())
+	}
+
+}
+
+#[async_trait]
+impl OrderExtractor for DBClient {
+	async fn get_order(
+		&self,
+		order_id: &Uuid,
+	) -> Result<Option<Order>, sqlx::Error> {
+		let order = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				WHERE id = $1
+				"#,
+				order_id,
+			)
+			.fetch_optional(self.pool())
+			.await?;
+		
+		Ok(order)
+	}
+
+	async fn get_all_orders(
+		&self,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error> {
+		let offset = (page - 1) * limit as u32;
+
+		let orders = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				"#
+			)
+			.fetch_all(self.pool())
+			.await?;
+
+		Ok(orders)
+	}
+
+	async fn save_order(
+		&self,
+		user_id: &Uuid,
+		product_id: &Uuid,
+		order_details_id: Option<&Uuid>,
+	) -> Result<Order, sqlx::Error> {
+		
+		let order = sqlx::query_as!(
+				Order,
+				r#"
+				INSERT INTO orders( user_id, product_id, order_details_id )
+				VALUES ( $1, $2, $3 )
+				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at
+				"#,
+				user_id,
+				product_id,
+				order_details_id,
+			)
+			.fetch_one(self.pool())
+			.await?;
+
+		Ok(order)
+	}
+
+	async fn delete_order(
+		&self,
+		order_id: &Uuid,
+	) -> Result<(), Option<sqlx::Error>> {
+
+		let result = sqlx::query!(
+			r#"
+			DELETE FROM orders
+			WHERE id = $1
+			RETURNING id
+			"#,
+			order_id,
+		)
+		.fetch_optional(self.pool())
+		.await?
+		.ok_or_else(|| None)?;
+
+		Ok(())
+	}
+
+	async fn get_orders_by_user(
+		&self,
+		user_id: &Uuid,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error> {
+		let offset = (page - 1) * limit as u32;
+
+		let orders = sqlx::query_as!(
+				Order,
+				r#"
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				FROM orders
+				WHERE user_id = $1
+				"#,
+				user_id,
+			)
+			.fetch_all(self.pool())
+			.await?;
+
+		Ok(orders)
 	}
 
 }
@@ -352,7 +481,7 @@ mod user_tests {
 		let db_client = DBClient::new(pool);
 
 		let user = db_client
-			.get_user(id_1)
+			.get_user(&id_1)
 			.await
 			.unwrap_or_else(|err| panic!("Failed to get user by id: {}", err))
 			.expect("User not found");
@@ -368,7 +497,7 @@ mod user_tests {
 		let nonexistant_id = Uuid::new_v4();
 
 		let result = db_client
-			.get_user(nonexistant_id)
+			.get_user(&nonexistant_id)
 			.await
 			.unwrap_or_else(|err| panic!("Failed to get user by id: {}", err));
 
@@ -507,8 +636,40 @@ mod user_tests {
 		let result = db_client
 			.save_user(too_long_name.as_str(), email, password)
 			.await;
-		
+
 		assert!(result.is_err(), "Expected save to fail");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_user(pool: Pool<Postgres>) {
+		let (user_id, _, _) = init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		db_client.delete_user(&user_id).await.expect("Failed to delete user");
+
+		let result = db_client.get_user(&user_id).await.unwrap();
+
+		match result {
+			Some(_) => panic!("User found, but no one expected"),
+			None => (),
+		}
+	}
+
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_invalid_user(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_users(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let result = db_client
+			.delete_user(&Uuid::new_v4())
+			.await;
+
+		match result {
+			Err(None) => (),	// Not found, Ok
+			Err(Some(err)) => panic!("Failed to delete user: {err}"),
+			Ok(_) => panic!("Error: invalid user found") // found, Error
+		}
 	}
 
 }
@@ -525,7 +686,7 @@ mod products_tests {
 		let db_client = DBClient::new(pool);
 
 		let product = db_client
-			.get_product(product_data.product_id)
+			.get_product(&product_data.product_id)
 			.await
 			.unwrap_or_else(|err| panic!("Failed to get product by id: {}", err))
 			.expect("product not found");
@@ -541,7 +702,7 @@ mod products_tests {
 		let nonexistant_id = Uuid::new_v4();
 
 		let result = db_client
-			.get_product(nonexistant_id)
+			.get_product(&nonexistant_id)
 			.await
 			.unwrap_or_else(|err| panic!("Failed to get product by id: {}", err));
 
@@ -651,6 +812,32 @@ mod products_tests {
 	}
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_product_with_invalid_user_id(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_products(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let name = "Car";
+		let user_id = Uuid::new_v4();
+		let description = Some("A beautiful car".to_string());
+		let price_in_cents = 1200;
+
+		let result = db_client.save_product(name, &user_id, description.clone(), price_in_cents).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected, found: {}", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn save_product_but_name_too_long(pool: Pool<Postgres>) {
 		let (data, _, _) = init_test_products(&pool).await;
 		let db_client = DBClient::new(pool);
@@ -665,6 +852,278 @@ mod products_tests {
 			.await;
 
 		assert!(result.is_err(), "Expected save to fail");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_product(pool: Pool<Postgres>) {
+		let (data, _, _) = init_test_products(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		db_client.delete_product(&data.product_id).await.expect("Failed to delete product");
+
+		let result = db_client.get_product(&data.product_id).await.unwrap();
+
+		match result {
+			Some(_) => panic!("Product found, but no one expected"),
+			None => (),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_invalid_product(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_products(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let result = db_client
+			.delete_product(&Uuid::new_v4())
+			.await;
+
+		match result {
+			Err(None) => (),	// Not found, Ok
+			Err(Some(err)) => panic!("Failed to delete product: {err}",),
+			Ok(_) => panic!("Error: invalid product found") // found, Error
+		}
+	}
+
+}
+
+mod orders_test {
+	use futures_util::TryFutureExt;
+	use crate::utils::test_utils::{init_test_orders};
+	use super::*;
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_order_by_id(pool: Pool<Postgres>) {
+		let (order_data, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let order = db_client
+			.get_order(&order_data.order_id)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get order by id: {}", err))
+			.expect("order not found");
+
+		assert_eq!(order.id, order_data.order_id);
+		assert_eq!(order.product_id, order_data.product_id);
+		assert_eq!(order.user_id, order_data.user_id);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_order_by_nonexistent_id(pool: Pool<Postgres>) {
+		init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let nonexistant_id = Uuid::new_v4();
+
+		let result = db_client
+			.get_order(&nonexistant_id)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get order by id: {}", err));
+
+		assert!(result.is_none(), "Expected order to be None");
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders_by_user(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let orders = db_client
+			.get_orders_by_user(&data.user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user: {}", err));
+
+		assert_eq!(orders.len(), 1);
+
+		let order = orders.iter().nth(0).unwrap();
+		assert_eq!(order.user_id, data.user_id);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders_by_nonexistent_user_id(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let nonexistent_user_id = Uuid::new_v4();
+
+		let result = db_client
+			.get_orders_by_user(&nonexistent_user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user id: {}", err));
+
+		assert_eq!(result.len(), 0);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn get_orders(pool: Pool<Postgres>) {
+		init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let orders = db_client
+			.get_all_orders(1, 10)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get all orders: {}", err));
+
+		assert_eq!(orders.len(), 3);
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order(pool: Pool<Postgres>) {
+		let (data, data2, data3) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let test_user = db_client.save_user(
+			"test_user",
+			"test_user@gmail.com",
+			"test",
+		).await.unwrap();
+
+		let user_id = &test_user.id;
+		let product_id = &data3.product_id;
+		let order_details_id = None;
+
+		db_client.save_order(
+			user_id,
+			product_id,
+			order_details_id,
+		).await.unwrap();
+
+		let orders = db_client
+			.get_orders_by_user(user_id, 1, 5)
+			.await
+			.unwrap_or_else(|err| panic!("Failed to get orders by user_id: {err}"));
+
+		assert_eq!(orders.len(), 1);
+
+		let order = orders.iter().nth(0).unwrap();
+
+		assert_eq!(order.user_id, user_id.clone());
+		assert_eq!(order.product_id, product_id.clone());
+		assert_eq!(order.order_details_id, order_details_id.copied());
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order_with_invalid_user_id(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let user_id = Uuid::new_v4();
+		let product_id = &data.product_id;
+		let order_details_id = None;
+
+		let result =  db_client.save_order(
+			&user_id,
+			product_id,
+			order_details_id,
+		).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected, found: {}", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order_with_invalid_product_id(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let user_id = &data.user_id;
+		let product_id = Uuid::new_v4();
+		let order_details_id = None;
+
+		let result =  db_client.save_order(
+			user_id,
+			&product_id,
+			order_details_id,
+		).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected (found: {})", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order_with_invalid_order_details_id(pool: Pool<Postgres>) {
+		let (_, _, data) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let test_user = db_client.save_user(
+			"test_user",
+			"test_user@gmail.com",
+			"test",
+		).await.unwrap();
+
+		let user_id = &test_user.id;
+		let product_id = &data.product_id;
+		let order_details_id = Some(Uuid::new_v4());
+
+		let result = db_client.save_order(
+			user_id,
+			product_id,
+			order_details_id.as_ref(),
+		).await;
+
+		match result {
+			Err(sqlx::Error::Database(db_err)) => {
+				if db_err.is_foreign_key_violation() {
+					// Ok
+					return ;
+				} else {
+					panic!("Foreign key violation expected (found: {})", db_err.message())
+				}
+			},
+			Err(err) => panic!("Database error expected, found: {err}"),
+			Ok(_) => panic!("Call succeded, but a Database error was expected"),
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_order(pool: Pool<Postgres>) {
+		let (data, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		db_client.delete_order(&data.order_id).await.expect("Failed to delete order");
+
+		let result = db_client.get_order(&data.order_id).await.unwrap();
+
+		match result {
+			Some(_) => panic!("order found, but no one expected"),
+			None => (),	// not found, ok
+		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn delete_invalid_order(pool: Pool<Postgres>) {
+		let (_, _, _) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let result = db_client
+			.delete_order(&Uuid::new_v4())
+			.await;
+
+		match result {
+			Err(None) => (),	// Not found, Ok
+			Err(Some(err)) => panic!("Failed to delete order: {err}",),
+			Ok(_) => panic!("Error: invalid order found") // found, Error
+		}
 	}
 
 }

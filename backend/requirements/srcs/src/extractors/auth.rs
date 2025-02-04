@@ -87,7 +87,7 @@ where
 			let user_id = Uuid::parse_str(&user_id).unwrap();
 			let result = cloned_app_state
 				.db_client
-				.get_user(user_id)
+				.get_user(&user_id)
 				.await
 				.map_err(|e| ErrorInternalServerError(HttpError::server_error(e.to_string())))?;
 
@@ -138,7 +138,7 @@ mod tests {
 	use actix_web::{cookie::Cookie, get, http::{self, header::{self, HeaderName, HeaderValue}}, test, web::Header, App, HttpResponse};
 	use sqlx::{Pool, Postgres};
 
-	use crate::{database::db::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
+	use crate::{database::psql::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
 
 	use super::*;
 

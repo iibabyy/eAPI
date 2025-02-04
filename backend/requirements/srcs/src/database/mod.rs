@@ -2,15 +2,15 @@ use async_trait::async_trait;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-use crate::models::{Product, User};
+use crate::models::{Order, Product, User};
 
-pub mod db;
+pub mod psql;
 
 #[async_trait]
 pub trait UserExtractor {
 	async fn get_user(
 		&self,
-		user_id: Uuid,
+		user_id: &Uuid,
 	) -> Result<Option<User>, sqlx::Error>;
 
 	async fn get_user_by_email(
@@ -44,21 +44,17 @@ pub trait UserExtractor {
 		password: T,
 	) -> Result<User, sqlx::Error>;
 
-	
-	/*		Need to implement roles (basics users cannot delete users)	 	*/
-	// async fn delete_user<T: Into<String> + Send>(
-	// 	&self,
-	// 	name: T,
-	// 	email: T,
-	// 	password: T,
-	// ) -> Result<User, sqlx::Error>;
+	async fn delete_user(
+		&self,
+		user_id: &Uuid,
+	) -> Result<(), Option<sqlx::Error>>;
 }
 
 #[async_trait]
 pub trait ProductExtractor {
 	async fn get_product(
 		&self,
-		product_id: Uuid,
+		product_id: &Uuid,
 	) -> Result<Option<Product>, sqlx::Error>;
 
 	async fn get_products_by_name(
@@ -91,8 +87,8 @@ pub trait ProductExtractor {
 
 	async fn delete_product(
 		&self,
-		user_id: &Uuid,
-	) -> Result<Product, sqlx::Error>;
+		product_id: &Uuid,
+	) -> Result<(), Option<sqlx::Error>>;
 
 	async fn get_products_by_user(
 		&self,
@@ -102,6 +98,35 @@ pub trait ProductExtractor {
 	) -> Result<Vec<Product>, sqlx::Error>;
 }
 
-pub trait ProductExtractorTest {
+#[async_trait]
+pub trait OrderExtractor {
+	async fn get_order(
+		&self,
+		order_id: &Uuid,
+	) -> Result<Option<Order>, sqlx::Error>;
 
+	async fn get_all_orders(
+		&self,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error>;
+
+	async fn save_order(
+		&self,
+		user_id: &Uuid,
+		product_id: &Uuid,
+		order_details_id: Option<&Uuid>,
+	) -> Result<Order, sqlx::Error>;
+
+	async fn delete_order(
+		&self,
+		order: &Uuid,
+	) -> Result<(), Option<sqlx::Error>>;
+
+	async fn get_orders_by_user(
+		&self,
+		user_id: &Uuid,
+		page: u32,
+		limit: usize,
+	) -> Result<Vec<Order>, sqlx::Error>;
 }
