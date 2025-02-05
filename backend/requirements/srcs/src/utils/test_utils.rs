@@ -154,6 +154,7 @@ pub struct TestOrder {
 	user_id: Uuid,
 	product_id: Uuid,
 	order_details_id: Option<Uuid>,
+	products_number: i32,
 }
 
 #[derive(Clone, Copy)]
@@ -164,7 +165,6 @@ pub struct TestOrderData {
 	pub user_id: Uuid,
 }
 
-
 pub async fn init_test_orders(pool: &Pool<Postgres>) -> (TestOrderData, TestOrderData, TestOrderData) {
 	let db_client = DBClient::new(pool.clone());
 	let (product_1, product_2, product_3) = init_test_products(pool).await;
@@ -174,16 +174,19 @@ pub async fn init_test_orders(pool: &Pool<Postgres>) -> (TestOrderData, TestOrde
 			user_id: product_1.user_id,
 			product_id: product_2.product_id,
 			order_details_id: None,
+			products_number: 1,
         },
         TestOrder {
 			user_id: product_2.user_id,
 			product_id: product_3.product_id,
 			order_details_id: None,
+			products_number: 1,
         },
         TestOrder {
 			user_id: product_3.user_id,
 			product_id: product_1.product_id,
 			order_details_id: None,
+			products_number: 2,
         },
 	];
 
@@ -195,6 +198,7 @@ pub async fn init_test_orders(pool: &Pool<Postgres>) -> (TestOrderData, TestOrde
 				&order.user_id,
 				&order.product_id,
 				order.order_details_id.as_ref(),
+				order.products_number,
 			)
 			.await
 			.unwrap();

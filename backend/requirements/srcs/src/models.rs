@@ -1,8 +1,6 @@
 use chrono::prelude::*;
-use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct User {
     pub id: uuid::Uuid,
     pub name: String,
@@ -15,8 +13,7 @@ pub struct User {
 }
 
 
-#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Product {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
@@ -28,13 +25,14 @@ pub struct Product {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Order {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
     pub product_id: uuid::Uuid,
     pub order_details_id: Option<uuid::Uuid>,
+    pub products_number: i32,
+    // others fields ?
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

@@ -144,7 +144,7 @@ mod tests {
 
 	#[get("/", wrap = "RequireAuth")]
 	async fn handler_with_requireauth() -> HttpResponse {
-		HttpResponse::Ok().into()
+		HttpResponse::Ok().finish()
 	}
 
 

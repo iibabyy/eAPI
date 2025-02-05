@@ -36,18 +36,18 @@ async fn login (
 		.await
 		.map_err(|err| HttpError::server_error(err.to_string()))?;
 
-	if result.is_none() { return Err(HttpError::unauthorized(ErrorMessage::WrongCredentials)) }
+	if result.is_none() { return HttpError::unauthorized(ErrorMessage::WrongCredentials).into() }
 	let user = result.unwrap();
 	
 	// check passwords
 
 	let password_matches = match password::compare(&infos.password, &user.password) {
 		Ok(result) => result,
-		Err(ErrorMessage::HashingError) => return Err(HttpError::server_error(ErrorMessage::HashingError)),
-		Err(err) => return Err(HttpError::unauthorized(err)),
+		Err(ErrorMessage::HashingError) => return HttpError::server_error(ErrorMessage::HashingError).into(),
+		Err(err) => return HttpError::unauthorized(err).into(),
 	};
 
-	if password_matches == false { return Err(HttpError::unauthorized(ErrorMessage::WrongCredentials)) }
+	if password_matches == false { return HttpError::unauthorized(ErrorMessage::WrongCredentials).into() }
 
 	// building response
 
@@ -97,8 +97,8 @@ async fn register(
 
 	let hashed_password = match password::hash(infos.password) {
 		Ok(hash) => hash,
-		Err(ErrorMessage::HashingError) => return Err(HttpError::server_error(ErrorMessage::HashingError)),
-		Err(err) => return Err(HttpError::server_error(err)),
+		Err(ErrorMessage::HashingError) => return HttpError::server_error(ErrorMessage::HashingError).into(),
+		Err(err) => return HttpError::server_error(err).into(),
 	};
 
 	let result = data.db_client
@@ -116,11 +116,11 @@ async fn register(
 		})),
 
 		Err(sqlx::Error::Database(db_err)) => {
-			if db_err.is_unique_violation()		{ Err(HttpError::unique_constraint_voilation(ErrorMessage::EmailExist)) }
-			else	{ Err(HttpError::server_error(db_err.to_string())) }
+			if db_err.is_unique_violation()		{ HttpError::unique_constraint_voilation(ErrorMessage::EmailExist).into() }
+			else	{ HttpError::server_error(db_err.to_string()).into() }
 		},
 
-		Err(err) => Err(HttpError::server_error(err.to_string())),
+		Err(err) => HttpError::server_error(err.to_string()).into(),
 	}
 }
 
@@ -146,7 +146,7 @@ async fn refresh(
 	// verify deprecated token
 	let deprecated_token = match extract_token_from(&request) {
 		Ok(token) => token,
-		Err(err) => return Err(HttpError::unauthorized(err.to_string())),
+		Err(err) => return HttpError::unauthorized(err.to_string()).into(),
 	};
 
 	// find refresh-token

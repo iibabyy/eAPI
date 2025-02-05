@@ -37,12 +37,14 @@ pub enum ErrorMessage {
     WrongCredentials,
     EmailExist,
     UserNoLongerExist,
+    UserNotFound,
     ProductNoLongerExist,
+    ProductNotFound,
+    OrderNoLongerExist,
+    OrderNotFound,
     TokenNotProvided,
     RefreshTokenNotProvided,
     PermissionDenied,
-    ProductNotFound,
-    UserNotFound,
 }
 
 impl ToString for ErrorMessage {
@@ -76,6 +78,8 @@ impl ErrorMessage {
             ErrorMessage::PermissionDenied => "You are not allowed to perform this action".to_string(),
             ErrorMessage::ProductNotFound => "Product not found".to_string(),
             ErrorMessage::UserNotFound => "User not found".to_string(),
+            ErrorMessage::OrderNotFound => "Order not found".to_string(),
+            ErrorMessage::OrderNoLongerExist => "Order no longer exists".to_string(),
         }
     }
 }
@@ -90,6 +94,12 @@ impl From<BcryptError> for ErrorMessage {
 pub struct HttpError {
 	pub message: String,
 	pub status: u16,
+}
+
+impl<T> Into<Result<T, HttpError>> for HttpError {
+    fn into(self) -> Result<T, HttpError> {
+        Err(self)
+    }
 }
 
 impl HttpError {

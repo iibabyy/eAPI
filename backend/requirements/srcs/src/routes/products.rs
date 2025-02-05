@@ -58,11 +58,11 @@ async fn delete(
 		.await
 		.map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-	if product.is_none() { return Err(HttpError::not_found(ErrorMessage::ProductNoLongerExist)) }
+	if product.is_none() { return HttpError::not_found(ErrorMessage::ProductNoLongerExist).into() }
 
 	let product = product.unwrap();
 	if product.user_id != user.id {
-		return Err(HttpError::unauthorized(ErrorMessage::PermissionDenied))
+		return HttpError::unauthorized(ErrorMessage::PermissionDenied).into()
 	}
 
 	let deleted_product = data.db_client
@@ -169,6 +169,8 @@ mod tests {
     };
 
     use super::*;
+
+    
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn get_all_products(pool: Pool<Postgres>) {
@@ -300,7 +302,8 @@ mod tests {
             .uri("/products")
             .to_request();
 
-        let resp = test::call_service(&app, req).await;	// should panick
+        // should panick
+        let resp = test::call_service(&app, req).await;
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -348,9 +351,7 @@ mod tests {
 			.expect("Failed to deserialize products response from JSON");
 
         assert_eq!(product_response.status, Status::Success);
-        assert_eq!(product_response.data.id, product.id);
-        assert_eq!(product_response.data.name, product.name);
-        assert_eq!(product_response.data.price_in_cents, product.price_in_cents);
+        assert_eq!(product_response.data, ProductDto::from(&product));
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]

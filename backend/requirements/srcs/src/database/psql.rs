@@ -168,18 +168,16 @@ impl UserExtractor for DBClient {
 	async fn delete_user(
 		&self,
 		user_id: &Uuid,
-	) -> Result<(), Option<sqlx::Error>> {
+	) -> Result<(), sqlx::Error> {
 		let result = sqlx::query!(
 			r#"
 			DELETE FROM users
 			WHERE id = $1
-			RETURNING id
 			"#,
 			user_id,
 		)
-		.fetch_optional(self.pool())
-		.await?
-		.ok_or_else(|| None)?;
+		.execute(self.pool())
+		.await?;
 
 		Ok(())
 	}
@@ -341,18 +339,16 @@ impl ProductExtractor for DBClient {
 	async fn delete_product(
 		&self,
 		user_id: &Uuid,
-	) -> Result<(), Option<sqlx::Error>> {
+	) -> Result<(), sqlx::Error> {
 		let product = sqlx::query!(
 			r#"
 			DELETE FROM products
 			WHERE id = $1
-			RETURNING id
 			"#,
 			user_id,
 		)
-		.fetch_optional(&self.pool)
-		.await?
-		.ok_or_else(|| None)?;
+		.execute(&self.pool)
+		.await?;
 
 		Ok(())
 	}
@@ -368,7 +364,7 @@ impl OrderExtractor for DBClient {
 		let order = sqlx::query_as!(
 				Order,
 				r#"
-				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE id = $1
 				"#,
@@ -390,7 +386,7 @@ impl OrderExtractor for DBClient {
 		let orders = sqlx::query_as!(
 				Order,
 				r#"
-				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				"#
 			)
@@ -405,18 +401,20 @@ impl OrderExtractor for DBClient {
 		user_id: &Uuid,
 		product_id: &Uuid,
 		order_details_id: Option<&Uuid>,
+		products_number: i32,
 	) -> Result<Order, sqlx::Error> {
 		
 		let order = sqlx::query_as!(
 				Order,
 				r#"
-				INSERT INTO orders( user_id, product_id, order_details_id )
-				VALUES ( $1, $2, $3 )
-				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at
+				INSERT INTO orders( user_id, product_id, order_details_id, products_number )
+				VALUES ( $1, $2, $3, $4 )
+				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				"#,
 				user_id,
 				product_id,
 				order_details_id,
+				products_number,
 			)
 			.fetch_one(self.pool())
 			.await?;
@@ -427,19 +425,17 @@ impl OrderExtractor for DBClient {
 	async fn delete_order(
 		&self,
 		order_id: &Uuid,
-	) -> Result<(), Option<sqlx::Error>> {
+	) -> Result<(), sqlx::Error> {
 
 		let result = sqlx::query!(
 			r#"
 			DELETE FROM orders
 			WHERE id = $1
-			RETURNING id
 			"#,
 			order_id,
 		)
-		.fetch_optional(self.pool())
-		.await?
-		.ok_or_else(|| None)?;
+		.execute(self.pool())
+		.await?;
 
 		Ok(())
 	}
@@ -455,7 +451,7 @@ impl OrderExtractor for DBClient {
 		let orders = sqlx::query_as!(
 				Order,
 				r#"
-				SELECT id, user_id, product_id, order_details_id, created_at, updated_at
+				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE user_id = $1
 				"#,
@@ -663,13 +659,10 @@ mod user_tests {
 
 		let result = db_client
 			.delete_user(&Uuid::new_v4())
-			.await;
+			.await
+			.map_err(|err| panic!("Unexpected Error while deleting unexistent user: {err}"));
 
-		match result {
-			Err(None) => (),	// Not found, Ok
-			Err(Some(err)) => panic!("Failed to delete user: {err}"),
-			Ok(_) => panic!("Error: invalid user found") // found, Error
-		}
+		// no errors returned if user not found, expected behavior
 	}
 
 }
@@ -876,13 +869,10 @@ mod products_tests {
 
 		let result = db_client
 			.delete_product(&Uuid::new_v4())
-			.await;
+			.await
+			.map_err(|err| panic!("Unexpected error while deleting unexistent product: {err}"));
 
-		match result {
-			Err(None) => (),	// Not found, Ok
-			Err(Some(err)) => panic!("Failed to delete product: {err}",),
-			Ok(_) => panic!("Error: invalid product found") // found, Error
-		}
+		// no errors returned if product not found, expected behavior
 	}
 
 }
@@ -986,6 +976,7 @@ mod orders_test {
 			user_id,
 			product_id,
 			order_details_id,
+			2,
 		).await.unwrap();
 
 		let orders = db_client
@@ -1000,6 +991,7 @@ mod orders_test {
 		assert_eq!(order.user_id, user_id.clone());
 		assert_eq!(order.product_id, product_id.clone());
 		assert_eq!(order.order_details_id, order_details_id.copied());
+		assert_eq!(order.products_number, 2);
 	}
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -1015,6 +1007,7 @@ mod orders_test {
 			&user_id,
 			product_id,
 			order_details_id,
+			1,
 		).await;
 
 		match result {
@@ -1044,6 +1037,7 @@ mod orders_test {
 			user_id,
 			&product_id,
 			order_details_id,
+			1,
 		).await;
 
 		match result {
@@ -1079,6 +1073,7 @@ mod orders_test {
 			user_id,
 			product_id,
 			order_details_id.as_ref(),
+			1,
 		).await;
 
 		match result {
@@ -1093,6 +1088,35 @@ mod orders_test {
 			Err(err) => panic!("Database error expected, found: {err}"),
 			Ok(_) => panic!("Call succeded, but a Database error was expected"),
 		}
+	}
+
+	#[sqlx::test(migrator = "crate::MIGRATOR")]
+	async fn save_order_but_products_number_too_low(pool: Pool<Postgres>) {
+		let (data, _, data3) = init_test_orders(&pool).await;
+		let db_client = DBClient::new(pool);
+
+		let result = db_client.save_order(
+			&data.user_id,
+			&data3.product_id,
+			None,
+			0,
+		).await.err();
+
+		match result {
+			None => panic!("Call succeded, but an error was expected"),
+			Some(sqlx::Error::Database(db_err)) => {
+				if db_err.is_check_violation() {
+					// Ok
+				} else {
+					// other error
+					panic!("Failed to save order: {}", db_err.message())
+				}
+			},
+
+			// other error
+			Some(err) => panic!("Failed to save order: {err}"),
+		}
+
 	}
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -1117,13 +1141,10 @@ mod orders_test {
 
 		let result = db_client
 			.delete_order(&Uuid::new_v4())
-			.await;
+			.await
+			.map_err(|err| panic!("Unexpected error while deleting unexistent product: {err}"));
 
-		match result {
-			Err(None) => (),	// Not found, Ok
-			Err(Some(err)) => panic!("Failed to delete order: {err}",),
-			Ok(_) => panic!("Error: invalid order found") // found, Error
-		}
+		// no errors returned if order not found, expected behavior
 	}
 
 }

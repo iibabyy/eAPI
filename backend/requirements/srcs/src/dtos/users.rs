@@ -37,7 +37,7 @@ pub struct LoginUserDto {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterForeignUserDto {
     pub name: String,

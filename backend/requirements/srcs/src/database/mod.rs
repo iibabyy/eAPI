@@ -47,7 +47,7 @@ pub trait UserExtractor {
 	async fn delete_user(
 		&self,
 		user_id: &Uuid,
-	) -> Result<(), Option<sqlx::Error>>;
+	) -> Result<(), sqlx::Error>;
 }
 
 #[async_trait]
@@ -88,7 +88,7 @@ pub trait ProductExtractor {
 	async fn delete_product(
 		&self,
 		product_id: &Uuid,
-	) -> Result<(), Option<sqlx::Error>>;
+	) -> Result<(), sqlx::Error>;
 
 	async fn get_products_by_user(
 		&self,
@@ -116,12 +116,13 @@ pub trait OrderExtractor {
 		user_id: &Uuid,
 		product_id: &Uuid,
 		order_details_id: Option<&Uuid>,
+		products_number: i32,
 	) -> Result<Order, sqlx::Error>;
 
 	async fn delete_order(
 		&self,
 		order: &Uuid,
-	) -> Result<(), Option<sqlx::Error>>;
+	) -> Result<(), sqlx::Error>;
 
 	async fn get_orders_by_user(
 		&self,

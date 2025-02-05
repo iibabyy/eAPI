@@ -14,7 +14,7 @@ pub struct CreateProductDto {
     pub user_id: Uuid,
     pub description: Option<String>,
 
-	#[validate(range(min = 0))]
+	#[validate(range(min = 0, message = "Prices can not be negative"))]
 	pub price_in_cents: i64,
 }
 
@@ -29,6 +29,12 @@ pub struct ProductDto {
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+impl PartialEq for ProductDto {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 
 impl ProductDto {

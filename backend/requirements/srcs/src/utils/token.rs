@@ -57,7 +57,7 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<String, H
 			// if token.claims.exp < Utc::now().timestamp() as usize { panic!("Expired !") }
 			Ok(token.claims.sub)
 		},
-		Err(_) => Err(HttpError::new(ErrorMessage::InvalidToken, 401)),
+		Err(_) => HttpError::new(ErrorMessage::InvalidToken, 401).into(),
 	}
 }
 

@@ -1,21 +1,22 @@
-use actix_web::{get, web::{self, Data, Path, Query}, HttpResponse};
+use actix_web::{delete, get, put, web::{self, Data, Path, Query}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
 use crate::{
-    database::{ProductExtractor, UserExtractor}, dtos::{products::{FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto}, users::*, *}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}
+    database::{OrderExtractor, ProductExtractor, UserExtractor}, dtos::{orders::{OrderDto, OrderListResponseDto}, products::{FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto}, users::*, *}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}
 };
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/users")
-            .service(get_my_products)
-            .service(get_user_products)
             .service(get_me)
 			.service(get_by_id)
 			.service(get_all)
-			// .service(delete)
+			.service(delete)
 			// .service(add_sold)
+
+            .configure(orders::config)
+            .configure(products::config)
 		);
 }
 
@@ -60,85 +61,20 @@ async fn get_me(
     Ok(HttpResponse::Ok().json(response_data))
 }
 
-#[get("/me/products", wrap = "RequireAuth")]
-async fn get_my_products(
+#[delete("/me", wrap = "RequireAuth")]
+async fn delete(
     user: Authenticated,
-    query: Query<RequestQueryDto>,
-    data: Data<AppState>,
+    data: web::Data<AppState>
 ) -> Result<HttpResponse, HttpError> {
-
-    let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(10);
-
-    let products: Vec<ProductDto> = data.db_client
-        .get_products_by_user(
-            &user.id,
-            page as u32,
-            limit
-        )
+    data.db_client
+        .delete_user(&user.id)
         .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
-        .iter()
-        .map(|product| ProductDto::from(product))
-        .collect();
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
     Ok(
-        HttpResponse::Ok().json( ProductListResponseDto {
-            status: Status::Success,
-            results: products.len(),
-            data: products,
-        })
+        HttpResponse::NoContent().finish()
     )
 }
-
-#[get("/{user_id}/products", wrap = "RequireAuth")]
-async fn get_user_products(
-    user_id: Path<Uuid>,
-    query: Query<RequestQueryDto>,
-    data: Data<AppState>,
-) -> Result<HttpResponse, HttpError> {
-
-    let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(10);
-
-    let user = data.db_client
-        .get_user(&user_id)
-        .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
-        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNoLongerExist))?;  // check if user exists
-
-    let products: Vec<FilterProductDto> = data.db_client
-        .get_products_by_user(
-            &user.id,
-            page as u32,
-            limit
-        )
-        .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
-        .iter()
-        .map(|product| FilterProductDto::filter(product))
-        .collect();
-
-    Ok(
-        HttpResponse::Ok().json( FilterProductListResponseDto {
-            status: Status::Success,
-            results: products.len(),
-            data: products,
-        })
-    )
-}
-
-// #[delete("/{user_id}", wrap = "RequireAuth")]
-// async fn delete(
-//     id: web::Path<i32>,
-//     data: web::Data<AppState>
-// ) -> HttpResponse {
-//     match db_services::users::delete_user(id.into_inner(), &data.db_client).await {
-//         Ok(_) => HttpResponse::Ok().body(format!("user deleted.")),
-//         Err(err) => err,
-//     }
-// }
-
 
 #[get("", wrap = "RequireAuth")]
 async fn get_all(
@@ -171,6 +107,122 @@ async fn get_all(
 
 }
 
+mod products {
+    use super::*;
+
+    pub(super) fn config(config: &mut web::ServiceConfig) {
+        config
+            .service(get_my_products)
+            .service(get_user_products);
+    }
+
+    #[get("/me/products", wrap = "RequireAuth")]
+    async fn get_my_products(
+        user: Authenticated,
+        query: Query<RequestQueryDto>,
+        data: Data<AppState>,
+    ) -> Result<HttpResponse, HttpError> {
+    
+        let page = query.page.unwrap_or(1);
+        let limit = query.limit.unwrap_or(10);
+    
+        let products: Vec<ProductDto> = data.db_client
+            .get_products_by_user(
+                &user.id,
+                page as u32,
+                limit
+            )
+            .await
+            .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+            .iter()
+            .map(|product| ProductDto::from(product))
+            .collect();
+    
+        Ok(
+            HttpResponse::Ok().json( ProductListResponseDto {
+                status: Status::Success,
+                results: products.len(),
+                data: products,
+            })
+        )
+    }
+    
+    #[get("/{user_id}/products", wrap = "RequireAuth")]
+    async fn get_user_products(
+        user_id: Path<Uuid>,
+        query: Query<RequestQueryDto>,
+        data: Data<AppState>,
+    ) -> Result<HttpResponse, HttpError> {
+    
+        let page = query.page.unwrap_or(1);
+        let limit = query.limit.unwrap_or(10);
+    
+        let user = data.db_client
+            .get_user(&user_id)
+            .await
+            .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+            .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNoLongerExist))?;  // check if user exists
+    
+        let products: Vec<FilterProductDto> = data.db_client
+            .get_products_by_user(
+                &user.id,
+                page as u32,
+                limit
+            )
+            .await
+            .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+            .iter()
+            .map(|product| FilterProductDto::filter(product))
+            .collect();
+    
+        Ok(
+            HttpResponse::Ok().json( FilterProductListResponseDto {
+                status: Status::Success,
+                results: products.len(),
+                data: products,
+            })
+        )
+    }    
+}
+
+pub mod orders {
+    use super::*;
+
+    pub(super) fn config(config: &mut web::ServiceConfig) {
+        config
+            .service(get_my_orders);
+    }
+
+    #[get("/me/orders", wrap = "RequireAuth")]
+    async fn get_my_orders(
+        user: Authenticated,
+        query: Query<RequestQueryDto>,
+        data: web::Data<AppState>,
+    ) -> Result<HttpResponse, HttpError> {
+        query.validate()
+            .map_err(|err| HttpError::bad_request(err.to_string()))?;
+    
+        let page = query.page.unwrap_or(1);
+        let limit = query.limit.unwrap_or(10);
+    
+        let orders: Vec<OrderDto> = data.db_client
+            .get_orders_by_user(&user.id, page as u32, limit)
+            .await
+            .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+            .iter()
+            .map(|order| OrderDto::from(order))
+            .collect();
+    
+        Ok(HttpResponse::Ok().json(
+            OrderListResponseDto {
+                status: Status::Success,
+                results: orders.len(),
+                data: orders,
+            })
+        )
+    }
+}
+
 // #[put("/{user_id}/sold", wrap = "RequireAuth")]
 // async fn add_sold(
 //     id: Path<i32>,
@@ -197,7 +249,7 @@ mod tests {
         error::{ErrorMessage, ErrorResponse},
         utils::{
             password,
-            test_utils::{init_test_products, init_test_users, test_config},
+            test_utils::{init_test_orders, init_test_products, init_test_users, test_config},
             token,
         },
     };
@@ -242,7 +294,7 @@ mod tests {
             serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
         let responded_user = user_response.data;
 
-        assert_eq!(responded_user.email, initial_user.email);
+        assert_eq!(responded_user, FilterForeignUserDto::filter_user(&initial_user));
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -742,161 +794,261 @@ mod tests {
         }
     }
 
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn get_user_product_with_valid_id(pool: Pool<Postgres>) {
-        let (data, _, _) = init_test_products(&pool).await;
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
 
-        let token = token::create_token(
-                &data.user_id.to_string(),
-                config.secret_key.as_bytes(),
-                60
-            ) .unwrap();
+    #[cfg(test)]
+    mod products {
+        use super::*;
 
-        let initial_user = db_client.get_user(&data.user_id).await.expect("Failed to get user by id").unwrap();
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .configure(super::config),
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .insert_header(
-                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        async fn get_user_product_with_valid_id(pool: Pool<Postgres>) {
+            let (data, _, _) = init_test_products(&pool).await;
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &data.user_id.to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+            let initial_user = db_client.get_user(&data.user_id).await.expect("Failed to get user by id").unwrap();
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client,
+                    }))
+                    .configure(super::config),
             )
-            .uri(&format!("/users/{}/products", data.user_id))
-            .to_request();
+            .await;
+    
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri(&format!("/users/{}/products", data.user_id))
+                .to_request();
+    
+            let resp = test::call_service(&app, req).await;
+    
+            assert_eq!(resp.status(), http::StatusCode::OK);
+    
+            let body = test::read_body(resp).await;
+    
+            let response: ProductListResponseDto =
+                serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
+            let products = response.data;
+    
+            assert_eq!(products.len(), 1);
+            assert_eq!(products[0].id, data.product_id);
+        }
 
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-
-        let body = test::read_body(resp).await;
-
-        let response: ProductListResponseDto =
-            serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
-        let products = response.data;
-
-        assert_eq!(products.len(), 1);
-        assert_eq!(products[0].id, data.product_id);
-    }
-
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn get_user_product_with_invalid_id(pool: Pool<Postgres>) {
-        let (data, _, _) = init_test_products(&pool).await;
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
-
-        let token = token::create_token(
-                &data.user_id.to_string(),
-                config.secret_key.as_bytes(),
-                60
-            ) .unwrap();
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .configure(super::config),
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .insert_header(
-                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        async fn get_user_product_with_invalid_id(pool: Pool<Postgres>) {
+            let (data, _, _) = init_test_products(&pool).await;
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &data.user_id.to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client,
+                    }))
+                    .configure(super::config),
             )
-            .uri(&format!("/users/{}/products", Uuid::new_v4()))    // invalid id
-            .to_request();
-
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::NOT_FOUND);
-    }
-
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    #[should_panic]
-    async fn get_user_product_with_invalid_token(pool: Pool<Postgres>) {
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
-
-        let token = token::create_token(
-                &Uuid::new_v4().to_string(),
-                config.secret_key.as_bytes(),
-                60
-            ) .unwrap();
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .configure(super::config),
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .insert_header(
-                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            .await;
+    
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri(&format!("/users/{}/products", Uuid::new_v4()))    // invalid id
+                .to_request();
+    
+            let resp = test::call_service(&app, req).await;
+    
+            assert_eq!(resp.status(), http::StatusCode::NOT_FOUND);
+        }
+    
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        #[should_panic]
+        async fn get_user_product_with_invalid_token(pool: Pool<Postgres>) {
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &Uuid::new_v4().to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client,
+                    }))
+                    .configure(super::config),
             )
-            .uri(&format!("/users/{}/products", Uuid::new_v4()))    // invalid id
-            .to_request();
-
-        let resp = test::call_service(&app, req).await; // should panic
-
-    }
-
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn get_my_product_with_valid_id(pool: Pool<Postgres>) {
-        let (data, _, _) = init_test_products(&pool).await;
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
-
-        let token = token::create_token(
-                &data.user_id.to_string(),
-                config.secret_key.as_bytes(),
-                60
-            ) .unwrap();
-
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .configure(super::config),
-        )
-        .await;
-
-        let req = test::TestRequest::get()
-            .insert_header(
-                (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+            .await;
+    
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri(&format!("/users/{}/products", Uuid::new_v4()))    // invalid id
+                .to_request();
+    
+            let resp = test::call_service(&app, req).await; // should panic
+    
+        }
+    
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        async fn get_my_product_with_valid_id(pool: Pool<Postgres>) {
+            let (data, _, _) = init_test_products(&pool).await;
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &data.user_id.to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client,
+                    }))
+                    .configure(super::config),
             )
-            .uri("/users/me/products")
-            .to_request();
-
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-
-        let body = test::read_body(resp).await;
-
-        let response: ProductListResponseDto =
-            serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
-        let products = response.data;
-
-        assert_eq!(products.len(), 1);
-        assert_eq!(products[0].id, data.product_id);
+            .await;
+    
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri("/users/me/products")
+                .to_request();
+    
+            let resp = test::call_service(&app, req).await;
+    
+            assert_eq!(resp.status(), http::StatusCode::OK);
+    
+            let body = test::read_body(resp).await;
+    
+            let response: ProductListResponseDto =
+                serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
+            let products = response.data;
+    
+            assert_eq!(products.len(), 1);
+            assert_eq!(products[0].id, data.product_id);
+        }
+    
     }
+    
+    #[cfg(test)]
+    mod orders {
+        use super::*;
 
+        
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        async fn get_my_orders_with_valid_token(pool: Pool<Postgres>) {
+            let (data, _, data3) = init_test_orders(&pool).await;
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &data.user_id.to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client: db_client.clone(),
+                    }))
+                    .configure(super::config),
+            )
+            .await;
+    
+            db_client
+                .save_order(
+                    &data.user_id,
+                    &data3.product_id,
+                    None,
+                    1
+                ).await
+                .map_err(|err| panic!("Failed to save order: {err}"));
 
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri("/users/me/orders")
+                .to_request();
+    
+            let resp = test::call_service(&app, req).await;
+    
+            assert_eq!(resp.status(), http::StatusCode::OK);
+    
+            let body = test::read_body(resp).await;
+    
+            let response: OrderListResponseDto = serde_json::from_slice(&body)
+                .expect("Failed to deserialize user response from JSON");
+
+            let orders = response.data;
+    
+            assert!(orders.iter().all(|order| order.user_id == data.user_id));
+            assert!(orders.iter().any(|order| order.product_id == data3.product_id));
+            assert_eq!(orders.len(), 2);
+        }
+
+        #[sqlx::test(migrator = "crate::MIGRATOR")]
+        #[should_panic]
+        async fn get_my_orders_with_invalid_id(pool: Pool<Postgres>) {
+            let (data, _, data3) = init_test_orders(&pool).await;
+            let db_client = DBClient::new(pool.clone());
+            let config = test_config();
+    
+            let token = token::create_token(
+                    &Uuid::new_v4().to_string(),
+                    config.secret_key.as_bytes(),
+                    60
+                ) .unwrap();
+    
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(AppState {
+                        env: config.clone(),
+                        db_client: db_client.clone(),
+                    }))
+                    .configure(super::config),
+            )
+            .await;
+    
+            let req = test::TestRequest::get()
+                .insert_header(
+                    (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap())
+                )
+                .uri("/users/me/orders")
+                .to_request();
+    
+            // should panic
+            let resp = test::call_service(&app, req).await;
+        }
+
+    }
 }
