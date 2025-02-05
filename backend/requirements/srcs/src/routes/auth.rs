@@ -1,4 +1,4 @@
-use actix_web::{cookie::{time::Duration, CookieBuilder}, get, post, web::{self, Json}, HttpRequest, HttpResponse};
+use actix_web::{cookie::{time::Duration, CookieBuilder}, error::ErrorUnauthorized, get, post, web::{self, Json}, HttpRequest, HttpResponse};
 use jsonwebtoken::{DecodingKey, Validation};
 use serde_json::json;
 use validator::Validate;
@@ -12,6 +12,7 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 			.service(login)
 			.service(register)
 			.service(logout)
+			.service(refresh)
 	);
 }
 
@@ -61,7 +62,7 @@ async fn login (
 	let refresh_token = token::create_token(
 		&user.id.to_string(),
 		data.env.secret_key.as_bytes(),
-		data.env.jwt_max_seconds,
+		60 * 10, // 10mn	// TODO: change this for prod
 	)
 	.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
 
@@ -146,7 +147,7 @@ async fn refresh(
 	// verify deprecated token
 	let deprecated_token = match extract_token_from(&request) {
 		Ok(token) => token,
-		Err(err) => return HttpError::unauthorized(err.to_string()).into(),
+		Err(err) => return HttpError::unauthorized(err.message).into(),
 	};
 
 	// find refresh-token

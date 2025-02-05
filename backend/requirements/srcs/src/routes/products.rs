@@ -13,10 +13,10 @@ use crate::{
 pub(super) fn config(config: &mut web::ServiceConfig) {
 	config
 		.service(web::scope("/products") 
-            .service(self::get_by_id)
-            .service(self::get_all)
-            .service(self::delete)
-            .service(self::create)
+            .service(get_by_id)
+            .service(get_all)
+            .service(delete)
+            .service(create)
 		);
 }
 

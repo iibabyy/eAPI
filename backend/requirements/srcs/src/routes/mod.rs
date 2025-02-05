@@ -14,7 +14,7 @@ pub fn config(config: &mut web::ServiceConfig) {
 		.service(web::scope("/api")
 			.configure(user::config)
 			.configure(auth::config)
-			// .configure(product::config)
-			// .configure(order::config)
+			.configure(products::config)
+			.configure(orders::config)
 		);
 }
