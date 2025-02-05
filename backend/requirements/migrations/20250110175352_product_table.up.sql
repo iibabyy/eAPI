@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS products (
 	id UUID NOT NULL PRIMARY KEY DEFAULT(uuid_generate_v4()),
-	name VARCHAR(100) NOT NULL,
+	name VARCHAR(100) NOT NULL CHECK(name <> ''),
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	description VARCHAR(1000),
 	price_in_cents BIGINT NOT NULL CHECK(price_in_cents >= 0),

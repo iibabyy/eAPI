@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS order_details (
 	id UUID NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4()),
-	delivery_address VARCHAR(255) NOT NULL,
+	delivery_address VARCHAR(255) NOT NULL CHECK(delivery_address <> ''),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
