@@ -14,6 +14,9 @@ pub struct CreateProductDto {
     pub user_id: Uuid,
     pub description: Option<String>,
 
+    #[validate(range(min = 1, max = 9999, message = "Invalid number in stock"))]
+    pub number_in_stock: i32,
+
 	#[validate(range(min = 0, message = "Prices can not be negative"))]
 	pub price_in_cents: i64,
 }
@@ -26,6 +29,7 @@ pub struct ProductDto {
     pub name: String,
     pub description: Option<String>,
     pub price_in_cents: i64,
+    pub number_in_stock: i32,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -45,6 +49,7 @@ impl ProductDto {
             name: product.name.to_owned(),
             description: product.description.to_owned(),
             price_in_cents: product.price_in_cents,
+            number_in_stock: product.number_in_stock,
 
             created_at: product.created_at,
             updated_at: product.updated_at,
@@ -59,6 +64,7 @@ pub struct FilterProductDto {
     pub user_id: uuid::Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub number_in_stock: i32,
     pub price_in_cents: i64,
 
     pub created_at: DateTime<Utc>,
@@ -73,6 +79,7 @@ impl FilterProductDto {
             name: product.name.to_owned(),
             description: product.description.to_owned(),
             price_in_cents: product.price_in_cents,
+            number_in_stock: product.number_in_stock,
 
             created_at: product.created_at,
             updated_at: product.updated_at,

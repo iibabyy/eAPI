@@ -194,7 +194,7 @@ impl ProductExtractor for DBClient {
 		let product: Option<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE id = $1
 			"#,
@@ -217,7 +217,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 			Product,
 			r#"
-			SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE user_id = $1
 			LIMIT $2
@@ -244,7 +244,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 				Product,
 				r#"
-				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE name = $1
 				LIMIT $2
@@ -270,7 +270,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 				Product,
 				r#"
-				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				LIMIT $1
 				OFFSET $2
@@ -295,7 +295,7 @@ impl ProductExtractor for DBClient {
 		let products: Vec<Product> = sqlx::query_as!(
 				Product,
 				r#"
-				SELECT id, name, user_id, description, price_in_cents, created_at, updated_at
+				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE starts_with(name, $1)
 				LIMIT $2
@@ -317,18 +317,20 @@ impl ProductExtractor for DBClient {
 		user_id: &Uuid,
 		description: Option<&String>,
 		price_in_cents: i64,
+		number_in_stock: i32,
 	) -> Result<Product, sqlx::Error> {
 		let product = sqlx::query_as!(
 				Product,
 				r#"
-				INSERT INTO products ( name, user_id, description, price_in_cents )
-				VALUES ( $1, $2, $3, $4 )
-				RETURNING id, name, user_id, description, price_in_cents, updated_at, created_at
+				INSERT INTO products ( name, user_id, description, price_in_cents, number_in_stock )
+				VALUES ( $1, $2, $3, $4, $5 )
+				RETURNING id, name, user_id, description, price_in_cents, number_in_stock, updated_at, created_at
 				"#,
 				name.into(),
 				user_id,
 				description,
 				price_in_cents,
+				number_in_stock,
 			)
 			.fetch_one(&self.pool)
 			.await?;
@@ -787,7 +789,7 @@ mod products_tests {
 		let description = Some("A beautiful car".to_string());
 		let price_in_cents = 1200;
 
-		db_client.save_product(name, &user_id, description.as_ref(), price_in_cents).await.unwrap();
+		db_client.save_product(name, &user_id, description.as_ref(), price_in_cents, 1).await.unwrap();
 
 		let products = db_client
 			.get_products_by_name(name.to_string(), 1, 5)
@@ -814,7 +816,7 @@ mod products_tests {
 		let description = Some("A beautiful car".to_string());
 		let price_in_cents = 1200;
 
-		let result = db_client.save_product(name, &user_id, description.as_ref(), price_in_cents).await;
+		let result = db_client.save_product(name, &user_id, description.as_ref(), price_in_cents, 1).await;
 
 		match result {
 			Err(sqlx::Error::Database(db_err)) => {
@@ -841,7 +843,7 @@ mod products_tests {
 		let price_in_cents = 12;
 
 		let result = db_client
-			.save_product(too_long_name.as_str(), &user_id, description, price_in_cents)
+			.save_product(too_long_name.as_str(), &user_id, description, price_in_cents, 1)
 			.await;
 
 		assert!(result.is_err(), "Expected save to fail");

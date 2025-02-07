@@ -102,6 +102,23 @@ impl<T> Into<Result<T, HttpError>> for HttpError {
     }
 }
 
+impl From<sqlx::Error> for HttpError {
+    fn from(err: sqlx::Error) -> Self {
+        match err {
+            sqlx::Error::Database(db_err) => {
+                let message = db_err.message();
+
+                match message {
+                    "auto-buying" => HttpError::bad_request("Impossible to buy your own article"),
+                    _ => HttpError::server_error(ErrorMessage::ServerError),
+                }
+            },
+
+            _ => HttpError::server_error(ErrorMessage::ServerError),
+        }
+    }
+}
+
 impl HttpError {
 	pub fn new(message: impl Into<String>, status: u16) -> Self {
 		HttpError {

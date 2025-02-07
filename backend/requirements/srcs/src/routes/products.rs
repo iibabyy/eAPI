@@ -121,7 +121,8 @@ async fn create(
             &product.name,
             &product.user_id,
             product.description.as_ref(),
-            product.price_in_cents
+            product.price_in_cents,
+            product.number_in_stock,
         )
         .await
         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
@@ -193,7 +194,8 @@ mod tests {
 				"computer",
 				&data.user_id,
 				Some("A super computer".to_string()).as_ref(),
-				350 * 100
+				350 * 100,
+                1,
 			)
             .await
             .unwrap();
@@ -240,7 +242,8 @@ mod tests {
 				"computer",
 				&data.user_id,
 				Some("A super computer".to_string()).as_ref(),
-				350 * 100
+				350 * 100,
+                1,
 			)
             .await
             .unwrap();
@@ -288,7 +291,8 @@ mod tests {
 				"computer",
 				&data.user_id,
 				Some("A super computer".to_string()).as_ref(),
-				350 * 100
+				350 * 100,
+                1,
 			)
             .await
             .unwrap();
@@ -327,7 +331,8 @@ mod tests {
 				"computer",
 				&data.user_id,
 				Some("A super computer".to_string()).as_ref(),
-				350 * 100
+				350 * 100,
+                1,
 			)
             .await
             .unwrap();
@@ -421,6 +426,7 @@ mod tests {
 				user_id: data.user_id,
 				description: Some("A black smartphone".to_string()),
 				price_in_cents: 250 * 100,
+                number_in_stock: 1,
 			})
             .to_request();
 
@@ -467,6 +473,7 @@ mod tests {
 				user_id: data.user_id,
 				description: None,
 				price_in_cents: 250 * 100,
+                number_in_stock: 1,
 			})
             .to_request();
 
@@ -513,6 +520,7 @@ mod tests {
 				user_id: data.user_id,
 				description: Some("a".repeat(1001)), 	// max is 1000 characters
 				price_in_cents: 250 * 100,
+                number_in_stock: 1,
 			})
             .to_request();
 

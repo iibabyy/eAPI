@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS products (
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	description VARCHAR(1000),
 	price_in_cents BIGINT NOT NULL CHECK(price_in_cents >= 0),
-	number_in_stock INTEGER NOT NULL,
+	number_in_stock INTEGER NOT NULL CHECK(number_in_stock < 1000),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

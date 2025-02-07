@@ -19,6 +19,7 @@ pub struct Product {
     pub user_id: uuid::Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub number_in_stock: i32,
     pub price_in_cents: i64,
 
     pub created_at: DateTime<Utc>,

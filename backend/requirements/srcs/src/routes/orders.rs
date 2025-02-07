@@ -2,7 +2,7 @@ use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{database::OrderExtractor, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}};
+use crate::{database::{OrderExtractor, ProductExtractor}, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}};
 
 pub fn config(config: &mut web::ServiceConfig) {
 	config
@@ -42,6 +42,33 @@ async fn get_by_id(
 			data: OrderDto::from(&order),
 		})
 	)
+}
+
+#[post("/{order_id}/validate")]
+async fn validate(
+	user: Authenticated,
+	order_id: web::Path<Uuid>,
+	data: web::Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+    let order = data.db_client
+        .get_order(&order_id)
+        .await
+        .map_err(|err| HttpError::from(err))?
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::OrderNoLongerExist))?;
+
+    if user.id != order.user_id {
+		//	not found, to not indicate if an invalid order id belong to a real user's order or an inexistent order
+        return HttpError::not_found(ErrorMessage::OrderNoLongerExist).into();
+    }
+
+    let product = data.db_client
+        .get_product(&order.product_id)
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
+        .ok_or_else(|| HttpError::bad_request(ErrorMessage::ProductNoLongerExist))?;
+
+    
+    
 }
 
 #[post("", wrap = "RequireAuth")]
