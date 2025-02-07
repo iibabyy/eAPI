@@ -1,8 +1,9 @@
-use actix_web::{delete, get, put, web::{self, Data, Path, Query}, HttpResponse};
+use actix_web::{delete, get, post, put, web::{self, Data, Path, Query}, HttpResponse};
+use sqlx::PgConnection;
 use uuid::Uuid;
 use validator::Validate;
 use crate::{
-    database::{OrderExtractor, ProductExtractor, UserExtractor}, dtos::{orders::{OrderDto, OrderListResponseDto}, products::{FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto}, users::*, *}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}
+    database::{transaction::{DBTransaction, ITransaction}, OrderExtractor, ProductExtractor, UserExtractor}, dtos::{orders::{OrderDto, OrderListResponseDto}, products::{FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto}, users::*, *}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}
 };
 
 
@@ -59,6 +60,35 @@ async fn get_me(
     };
 
     Ok(HttpResponse::Ok().json(response_data))
+}
+
+#[post("/me/sold", wrap = "RequireAuth")]
+async fn add_sold(
+    user: Authenticated,
+    infos: Query<AddSoldDto>,
+    data: web::Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+
+    infos.validate()
+        .map_err(|err| HttpError::bad_request(err.to_string()))?;
+
+    let mut tx = DBTransaction::begin(data.db_client.pool())
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+
+    tx
+        .lock_user(&user.id).await
+            .map_err(|err| HttpError::from(err))?
+        .increase_user_sold(&user.id, infos.sold_to_add).await
+            .map_err(|err| HttpError::from(err))?;
+    
+    tx
+        .commit().await
+            .map_err(|err| HttpError::from(err))?;
+
+    Ok(
+        HttpResponse::NoContent().finish()
+    )
 }
 
 #[delete("/me", wrap = "RequireAuth")]

@@ -64,7 +64,6 @@ pub struct FilterProductDto {
     pub user_id: uuid::Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub number_in_stock: i32,
     pub price_in_cents: i64,
 
     pub created_at: DateTime<Utc>,
@@ -79,7 +78,6 @@ impl FilterProductDto {
             name: product.name.to_owned(),
             description: product.description.to_owned(),
             price_in_cents: product.price_in_cents,
-            number_in_stock: product.number_in_stock,
 
             created_at: product.created_at,
             updated_at: product.updated_at,

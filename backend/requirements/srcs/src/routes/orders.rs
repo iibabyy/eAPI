@@ -1,8 +1,9 @@
 use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
+use colored::Colorize;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{database::{OrderExtractor, ProductExtractor}, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}};
+use crate::{database::{transaction::{DBTransaction, ITransaction}, OrderExtractor, ProductExtractor}, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}};
 
 pub fn config(config: &mut web::ServiceConfig) {
 	config
@@ -44,40 +45,25 @@ async fn get_by_id(
 	)
 }
 
-#[post("/{order_id}/validate")]
-async fn validate(
-	user: Authenticated,
-	order_id: web::Path<Uuid>,
-	data: web::Data<AppState>,
-) -> Result<HttpResponse, HttpError> {
-    let order = data.db_client
-        .get_order(&order_id)
-        .await
-        .map_err(|err| HttpError::from(err))?
-        .ok_or_else(|| HttpError::not_found(ErrorMessage::OrderNoLongerExist))?;
+// // TODO!: Add tests for this endpoint
+// #[post("/{order_id}/validate")]
+// async fn validate(
+// 	user: Authenticated,
+// 	order_id: web::Path<Uuid>,
+// 	data: web::Data<AppState>,
+// ) -> Result<HttpResponse, HttpError> {
+//     let mut tx = DBTransaction::begin(data.db_client.pool())
+//         .await
+//         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-    if user.id != order.user_id {
-		//	not found, to not indicate if an invalid order id belong to a real user's order or an inexistent order
-        return HttpError::not_found(ErrorMessage::OrderNoLongerExist).into();
-    }
+//     tx
+//         .lock_user(&user.id)
 
-    let product = data.db_client
-        .get_product_for_update(&order.product_id)
-        .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
-        .ok_or_else(|| HttpError::bad_request(ErrorMessage::ProductNoLongerExist))?;
-
-    // check products in stock ?
-    //
-    // reduce products in stock
-    //
-    // ok
-
-    Ok(
-        HttpResponse::NotImplemented().finish()
-    )
+//     Ok(
+//         HttpResponse::NoContent().finish()
+//     )
     
-}
+// }
 
 #[post("", wrap = "RequireAuth")]
 async fn create(

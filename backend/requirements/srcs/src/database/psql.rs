@@ -1,5 +1,7 @@
+use std::ops::DerefMut;
+
 use async_trait::async_trait;
-use sqlx::{Pool, Postgres};
+use sqlx::{pool::maybe::MaybePoolConnection, PgConnection, Pool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::models::{Order, Product, User};
@@ -12,17 +14,59 @@ pub struct DBClient {
 	pool: Pool<Postgres>,
 }
 
+// TODO!: write tests for those functions
 impl DBClient {
 	pub fn new(pool: Pool<Postgres>) -> Self {
 		DBClient {
 			pool
 		}
 	}
+
+	pub async fn reduce_user_sold(
+		tx: &mut Transaction<'_, Postgres>,
+		user_id: &Uuid,
+		to_reduce: i64,
+	) -> Result<(), sqlx::Error> {
+		let _ = sqlx::query!(
+			r#"
+			UPDATE users
+			SET sold_in_cents = sold_in_cents - $1
+			WHERE id = $2
+			"#,
+			to_reduce,
+			user_id,
+		)
+		.execute(tx.deref_mut())
+		.await?;
 	
+		Ok(())
+	}
+
+	pub async fn increase_user_sold(
+		tx: &mut Transaction<'_, Postgres>,
+		user_id: &Uuid,
+		to_increase: i64,
+	) -> Result<(), sqlx::Error> {
+		sqlx::query!(
+			r#"
+			UPDATE users
+			SET sold_in_cents = sold_in_cents + $1
+			WHERE id = $2
+			"#,
+			to_increase,
+			user_id,
+		)
+		.execute(tx.deref_mut())
+		.await?;
+	
+		Ok(())
+	}
+
 	pub async fn get_product_for_update(
-		&self,
+		tx: &mut Transaction<'_, Postgres>,
 		product_id: &Uuid,
 	) -> Result<Option<Product>, sqlx::Error> {
+
 		let product: Option<Product> = sqlx::query_as!(
 			Product,
 			r#"
@@ -33,10 +77,70 @@ impl DBClient {
 			"#,
 			product_id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(tx.deref_mut())
 		.await?;
 
 		Ok(product)
+	}
+
+	pub async fn increase_product_stock(
+		tx: &mut Transaction<'_, Postgres>,
+		product_id: &Uuid,
+		to_increase: i32,
+	) -> Result<(), sqlx::Error> {
+		
+		sqlx::query!(
+			r#"
+			UPDATE products
+			SET number_in_stock = number_in_stock + $1
+			WHERE id = $2
+			"#,
+			to_increase,
+			product_id,
+		)
+		.execute(tx.deref_mut())
+		.await?;
+
+		Ok(())
+	}
+
+	pub async fn decrease_product_stock(
+		tx: &mut Transaction<'_, Postgres>,
+		product_id: &Uuid,
+		to_decrease: i32,
+	) -> Result<(), sqlx::Error> {
+		sqlx::query!(
+			r#"
+			UPDATE products
+			SET number_in_stock = number_in_stock - $1
+			WHERE id = $2
+			"#,
+			to_decrease,
+			product_id,
+		)
+		.execute(tx.deref_mut())
+		.await?;
+
+		Ok(())
+	}
+
+	pub async fn select_product_for_update(
+		tx: &mut PgConnection,
+		product_id: &Uuid,
+	) -> Result<(), sqlx::Error> {
+
+		sqlx::query!(
+			r#"
+			SELECT FROM products
+			WHERE id=$1
+			FOR UPDATE
+			"#,
+			product_id,
+		)
+		.execute(tx)
+		.await?;
+
+		Ok(())
 	}
 
 	pub fn pool(&self) -> &Pool<Postgres> {
@@ -198,6 +302,10 @@ impl UserExtractor for DBClient {
 		)
 		.execute(self.pool())
 		.await?;
+
+		if result.rows_affected() == 0 {
+			return Err(sqlx::Error::RowNotFound)
+		}
 
 		Ok(())
 	}
@@ -362,7 +470,7 @@ impl ProductExtractor for DBClient {
 		&self,
 		user_id: &Uuid,
 	) -> Result<(), sqlx::Error> {
-		let product = sqlx::query!(
+		let result = sqlx::query!(
 			r#"
 			DELETE FROM products
 			WHERE id = $1
@@ -371,6 +479,10 @@ impl ProductExtractor for DBClient {
 		)
 		.execute(&self.pool)
 		.await?;
+
+		if result.rows_affected() == 0 {
+			return Err(sqlx::Error::RowNotFound)
+		}
 
 		Ok(())
 	}
@@ -458,6 +570,10 @@ impl OrderExtractor for DBClient {
 		)
 		.execute(self.pool())
 		.await?;
+
+		if result.rows_affected() == 0 {
+			return Err(sqlx::Error::RowNotFound)
+		}
 
 		Ok(())
 	}

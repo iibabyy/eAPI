@@ -112,3 +112,12 @@ pub struct LoginResponseDto {
     pub data: FilterUserDto,
     pub token: String,
 }
+
+#[derive(Validate, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddSoldDto {
+
+    // 1m cents -> 10k dollars
+    #[validate(range(min = 1, max = 1_000_000, message = "Invalid field soldToAdd"))]
+    pub sold_to_add: i64,
+}

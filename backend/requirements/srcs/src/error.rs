@@ -40,9 +40,11 @@ pub enum ErrorMessage {
     UserNotFound,
     ProductNoLongerExist,
     ProductNotFound,
+    NotEnoughProducts(i32),
     OrderNoLongerExist,
     OrderNotFound,
     TokenNotProvided,
+    SoldTooLow,
     RefreshTokenNotProvided,
     PermissionDenied,
 }
@@ -70,8 +72,8 @@ impl ErrorMessage {
             ErrorMessage::EmptyPassword => "Password cannot be empty".to_string(),
             ErrorMessage::HashingError => "Error while hashing password".to_string(),
             ErrorMessage::InvalidHashFormat => "Invalid password hash format".to_string(),
-            ErrorMessage::PasswordTooLong(max_length) => {format!("Password must not be more than {} characters", max_length)}
-            ErrorMessage::PasswordTooShort(max_length) => {format!("Password must not be less than {} characters", max_length)}
+            ErrorMessage::PasswordTooLong(max_length) => format!("Password must not be more than {} characters", max_length),
+            ErrorMessage::PasswordTooShort(max_length) => format!("Password must not be less than {} characters", max_length),
             ErrorMessage::InvalidToken => "Authentication token is invalid or expired".to_string(),
             ErrorMessage::TokenNotProvided => "You are not logged in, please provide token".to_string(),
             ErrorMessage::RefreshTokenNotProvided => "Refresh token not found, please log in".to_string(),
@@ -80,6 +82,9 @@ impl ErrorMessage {
             ErrorMessage::UserNotFound => "User not found".to_string(),
             ErrorMessage::OrderNotFound => "Order not found".to_string(),
             ErrorMessage::OrderNoLongerExist => "Order no longer exists".to_string(),
+            ErrorMessage::NotEnoughProducts(stock) if stock > &0 => format!("Only {stock} products remaining"),
+            ErrorMessage::NotEnoughProducts(_) => "0 products remaining".to_string(),
+            ErrorMessage::SoldTooLow => "Sold too low".to_string(),
         }
     }
 }
@@ -162,15 +167,27 @@ impl HttpError {
         }
     }
 
+    pub fn payment_required(message: impl Into<String>) -> Self {
+        HttpError {
+            message: message.into(),
+            status: 402,
+        }
+    }
+
 	pub fn into_http_response(self) -> HttpResponse {
 		match self.status {
 			400 => HttpResponse::BadRequest().json(Response {
                 status: Status::Failure,
                 message: self.message.into(),
             }),
-            
+
 			401 => HttpResponse::Unauthorized().json(Response {
                 status: Status::Failure,
+                message: self.message.into(),
+            }),
+
+			402 => HttpResponse::PaymentRequired().json(Response {
+                status: Status::Error,
                 message: self.message.into(),
             }),
             
