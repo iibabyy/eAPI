@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::Postgres;
 use uuid::Uuid;
 
-use crate::models::{Order, Product, User};
+use crate::{error::HttpError, models::{Order, Product, User}};
 
 pub mod psql;
 pub mod transaction;
@@ -104,6 +104,12 @@ pub trait ProductExtractor {
 pub trait OrderExtractor {
 	async fn get_order(
 		&self,
+		order_id: &Uuid,
+	) -> Result<Option<Order>, sqlx::Error>;
+
+	async fn get_order_if_belong_to_user(
+		&self,
+		user_id: &Uuid,
 		order_id: &Uuid,
 	) -> Result<Option<Order>, sqlx::Error>;
 

@@ -47,6 +47,7 @@ pub enum ErrorMessage {
     SoldTooLow,
     RefreshTokenNotProvided,
     PermissionDenied,
+    AutoBuying,
 }
 
 impl ToString for ErrorMessage {
@@ -85,6 +86,7 @@ impl ErrorMessage {
             ErrorMessage::NotEnoughProducts(stock) if stock > &0 => format!("Only {stock} products remaining"),
             ErrorMessage::NotEnoughProducts(_) => "0 products remaining".to_string(),
             ErrorMessage::SoldTooLow => "Sold too low".to_string(),
+            ErrorMessage::AutoBuying => "Impossible to buy your own article".to_string(),
         }
     }
 }
@@ -114,7 +116,7 @@ impl From<sqlx::Error> for HttpError {
                 let message = db_err.message();
 
                 match message {
-                    "auto-buying" => HttpError::bad_request("Impossible to buy your own article"),
+                    "auto-buying" => HttpError::bad_request(ErrorMessage::AutoBuying),
                     _ => HttpError::server_error(ErrorMessage::ServerError),
                 }
             },

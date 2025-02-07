@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use sqlx::{pool::maybe::MaybePoolConnection, PgConnection, Pool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::models::{Order, Product, User};
+use crate::{error::HttpError, models::{Order, Product, User}};
 
 use super::{OrderExtractor, ProductExtractor, UserExtractor};
 
@@ -20,127 +20,6 @@ impl DBClient {
 		DBClient {
 			pool
 		}
-	}
-
-	pub async fn reduce_user_sold(
-		tx: &mut Transaction<'_, Postgres>,
-		user_id: &Uuid,
-		to_reduce: i64,
-	) -> Result<(), sqlx::Error> {
-		let _ = sqlx::query!(
-			r#"
-			UPDATE users
-			SET sold_in_cents = sold_in_cents - $1
-			WHERE id = $2
-			"#,
-			to_reduce,
-			user_id,
-		)
-		.execute(tx.deref_mut())
-		.await?;
-	
-		Ok(())
-	}
-
-	pub async fn increase_user_sold(
-		tx: &mut Transaction<'_, Postgres>,
-		user_id: &Uuid,
-		to_increase: i64,
-	) -> Result<(), sqlx::Error> {
-		sqlx::query!(
-			r#"
-			UPDATE users
-			SET sold_in_cents = sold_in_cents + $1
-			WHERE id = $2
-			"#,
-			to_increase,
-			user_id,
-		)
-		.execute(tx.deref_mut())
-		.await?;
-	
-		Ok(())
-	}
-
-	pub async fn get_product_for_update(
-		tx: &mut Transaction<'_, Postgres>,
-		product_id: &Uuid,
-	) -> Result<Option<Product>, sqlx::Error> {
-
-		let product: Option<Product> = sqlx::query_as!(
-			Product,
-			r#"
-			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
-			FROM products
-			WHERE id = $1
-			FOR UPDATE
-			"#,
-			product_id,
-		)
-		.fetch_optional(tx.deref_mut())
-		.await?;
-
-		Ok(product)
-	}
-
-	pub async fn increase_product_stock(
-		tx: &mut Transaction<'_, Postgres>,
-		product_id: &Uuid,
-		to_increase: i32,
-	) -> Result<(), sqlx::Error> {
-		
-		sqlx::query!(
-			r#"
-			UPDATE products
-			SET number_in_stock = number_in_stock + $1
-			WHERE id = $2
-			"#,
-			to_increase,
-			product_id,
-		)
-		.execute(tx.deref_mut())
-		.await?;
-
-		Ok(())
-	}
-
-	pub async fn decrease_product_stock(
-		tx: &mut Transaction<'_, Postgres>,
-		product_id: &Uuid,
-		to_decrease: i32,
-	) -> Result<(), sqlx::Error> {
-		sqlx::query!(
-			r#"
-			UPDATE products
-			SET number_in_stock = number_in_stock - $1
-			WHERE id = $2
-			"#,
-			to_decrease,
-			product_id,
-		)
-		.execute(tx.deref_mut())
-		.await?;
-
-		Ok(())
-	}
-
-	pub async fn select_product_for_update(
-		tx: &mut PgConnection,
-		product_id: &Uuid,
-	) -> Result<(), sqlx::Error> {
-
-		sqlx::query!(
-			r#"
-			SELECT FROM products
-			WHERE id=$1
-			FOR UPDATE
-			"#,
-			product_id,
-		)
-		.execute(tx)
-		.await?;
-
-		Ok(())
 	}
 
 	pub fn pool(&self) -> &Pool<Postgres> {
@@ -508,6 +387,28 @@ impl OrderExtractor for DBClient {
 			.await?;
 		
 		Ok(order)
+	}
+
+	async fn get_order_if_belong_to_user(
+		&self,
+		user_id: &Uuid,
+		order_id: &Uuid,
+	) -> Result<Option<Order>, sqlx::Error> {
+		let result = self
+			.get_order(order_id)
+			.await?;
+
+		if let Some(order) = result {
+			// right id
+			if &order.user_id == user_id { Ok(Some(order))}
+			
+			// wrong id
+			else	{ Ok(None) }
+
+		} else {
+			// not found
+			Ok(None)
+		}
 	}
 
 	async fn get_all_orders(

@@ -45,25 +45,47 @@ async fn get_by_id(
 	)
 }
 
-// // TODO!: Add tests for this endpoint
-// #[post("/{order_id}/validate")]
-// async fn validate(
-// 	user: Authenticated,
-// 	order_id: web::Path<Uuid>,
-// 	data: web::Data<AppState>,
-// ) -> Result<HttpResponse, HttpError> {
-//     let mut tx = DBTransaction::begin(data.db_client.pool())
-//         .await
-//         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+// TODO!: Add tests for this endpoint
+#[post("/{order_id}/validate")]
+async fn validate(
+	user: Authenticated,
+	order_id: web::Path<Uuid>,
+	data: web::Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
+    let mut tx = DBTransaction::begin(data.db_client.pool())
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-//     tx
-//         .lock_user(&user.id)
+    let order = data.db_client
+        .get_order_if_belong_to_user(&user.id, &order_id).await
+        .map_err(|err| HttpError::from(err))?
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::OrderNoLongerExist))?;
 
-//     Ok(
-//         HttpResponse::NoContent().finish()
-//     )
+    let product = data.db_client
+        .get_product(&order.product_id).await
+        .map_err(|err| HttpError::from(err))?
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::ProductNoLongerExist))?;
+
+    if product.user_id == user.id {
+        // if user want to buy his own product
+        return Err(HttpError::bad_request(ErrorMessage::AutoBuying).into())
+    }
+
+    tx
+        .lock_user(&user.id).await
+            .map_err(|err| HttpError::from(err))?
+        .decrease_user_sold(&user.id, product.price_in_cents * order.products_number as i64).await
+            .map_err(|err| HttpError::from(err))?
+        .lock_product(&product.id).await
+            .map_err(|err| HttpError::from(err))?
+        .decrease_product_stock(&product.id, order.products_number).await
+            .map_err(|err| HttpError::from(err))?;
+
+    tx.commit().await.map_err(|err| HttpError::from(err))?;
+
+    Ok( HttpResponse::NoContent().finish() )
     
-// }
+}
 
 #[post("", wrap = "RequireAuth")]
 async fn create(
@@ -82,7 +104,7 @@ async fn create(
 			infos.products_number,
 		)
 		.await
-		.map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+		.map_err(|err| HttpError::from(err))?;
 
 	Ok(
 		HttpResponse::Ok().json( OrderResponseDto {
