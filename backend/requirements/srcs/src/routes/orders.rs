@@ -62,12 +62,20 @@ async fn validate(
     }
 
     let product = data.db_client
-        .get_product(&order.product_id)
+        .get_product_for_update(&order.product_id)
         .await
         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
         .ok_or_else(|| HttpError::bad_request(ErrorMessage::ProductNoLongerExist))?;
 
-    
+    // check products in stock ?
+    //
+    // reduce products in stock
+    //
+    // ok
+
+    Ok(
+        HttpResponse::NotImplemented().finish()
+    )
     
 }
 

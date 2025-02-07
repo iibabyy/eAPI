@@ -19,6 +19,26 @@ impl DBClient {
 		}
 	}
 	
+	pub async fn get_product_for_update(
+		&self,
+		product_id: &Uuid,
+	) -> Result<Option<Product>, sqlx::Error> {
+		let product: Option<Product> = sqlx::query_as!(
+			Product,
+			r#"
+			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
+			FROM products
+			WHERE id = $1
+			FOR UPDATE
+			"#,
+			product_id,
+		)
+		.fetch_optional(&self.pool)
+		.await?;
+
+		Ok(product)
+	}
+
 	pub fn pool(&self) -> &Pool<Postgres> {
 		&self.pool
 	}
