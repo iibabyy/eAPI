@@ -215,7 +215,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
 
-        let product_list_response: ProductListResponseDto = serde_json::from_slice(&body)
+        let product_list_response: FilterProductListResponseDto = serde_json::from_slice(&body)
 			.expect("Failed to deserialize products response from JSON");
 
         assert_eq!(product_list_response.results, 4);
@@ -263,7 +263,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
 
-        let product_list_response: ProductListResponseDto = serde_json::from_slice(&body)
+        let product_list_response: FilterProductListResponseDto = serde_json::from_slice(&body)
 			.expect("Failed to deserialize products response from JSON");
 
         assert_eq!(product_list_response.results, 1);
@@ -352,11 +352,11 @@ mod tests {
 
         let body = test::read_body(resp).await;
 
-        let product_response: ProductResponseDto = serde_json::from_slice(&body)
+        let product_response: FilterProductResponseDto = serde_json::from_slice(&body)
 			.expect("Failed to deserialize products response from JSON");
 
         assert_eq!(product_response.status, Status::Success);
-        assert_eq!(product_response.data, ProductDto::from(&product));
+        assert_eq!(product_response.data, FilterProductDto::filter(&product));
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]

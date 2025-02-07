@@ -866,7 +866,7 @@ mod tests {
     
             let body = test::read_body(resp).await;
     
-            let response: ProductListResponseDto =
+            let response: FilterProductListResponseDto =
                 serde_json::from_slice(&body).expect("Failed to deserialize user response from JSON");
             let products = response.data;
     
@@ -994,7 +994,7 @@ mod tests {
         
         #[sqlx::test(migrator = "crate::MIGRATOR")]
         async fn get_my_orders_with_valid_token(pool: Pool<Postgres>) {
-            let (data, _, data3) = init_test_orders(&pool).await;
+            let (data, data2, _) = init_test_orders(&pool).await;
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
     
@@ -1017,7 +1017,7 @@ mod tests {
             db_client
                 .save_order(
                     &data.user_id,
-                    &data3.product_id,
+                    &data2.product_id,
                     None,
                     1
                 ).await
@@ -1042,7 +1042,7 @@ mod tests {
             let orders = response.data;
     
             assert!(orders.iter().all(|order| order.user_id == data.user_id));
-            assert!(orders.iter().any(|order| order.product_id == data3.product_id));
+            assert!(orders.iter().any(|order| order.product_id == data2.product_id));
             assert_eq!(orders.len(), 2);
         }
 

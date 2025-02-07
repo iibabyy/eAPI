@@ -699,9 +699,13 @@ mod user_tests {
 		let result = db_client
 			.delete_user(&Uuid::new_v4())
 			.await
-			.map_err(|err| panic!("Unexpected Error while deleting unexistent user: {err}"));
+			.err();
 
-		// no errors returned if user not found, expected behavior
+		match result {
+			None => panic!("No error returned, but one was expected"),
+			Some(sqlx::Error::RowNotFound) => (), // ok
+			Some(_) => panic!("Failed to delete user"),
+		}
 	}
 
 }
@@ -909,9 +913,14 @@ mod products_tests {
 		let result = db_client
 			.delete_product(&Uuid::new_v4())
 			.await
-			.map_err(|err| panic!("Unexpected error while deleting unexistent product: {err}"));
+			.err();
 
-		// no errors returned if product not found, expected behavior
+		match result {
+			None => panic!("No error returned, but one was expected"),
+			Some(sqlx::Error::RowNotFound) => (),// Ok 
+			_ => panic!("Failed to delete product"),
+		}
+
 	}
 
 }
@@ -1131,12 +1140,12 @@ mod orders_test {
 
 	#[sqlx::test(migrator = "crate::MIGRATOR")]
 	async fn save_order_but_products_number_too_low(pool: Pool<Postgres>) {
-		let (data, _, data3) = init_test_orders(&pool).await;
+		let (data, data2, _) = init_test_orders(&pool).await;
 		let db_client = DBClient::new(pool);
 
 		let result = db_client.save_order(
 			&data.user_id,
-			&data3.product_id,
+			&data2.product_id,
 			None,
 			0,
 		).await.err();
@@ -1181,9 +1190,12 @@ mod orders_test {
 		let result = db_client
 			.delete_order(&Uuid::new_v4())
 			.await
-			.map_err(|err| panic!("Unexpected error while deleting unexistent product: {err}"));
+			.err();
 
-		// no errors returned if order not found, expected behavior
+		match result {
+			None => panic!("No error returned, but one was expected"),
+			Some(sqlx::Error::RowNotFound) => (), // ok
+			Some(_) => panic!("Failed to delete order"),
+		}
 	}
-
 }

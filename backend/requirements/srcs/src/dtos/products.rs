@@ -57,7 +57,7 @@ impl ProductDto {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterProductDto {
     pub id: uuid::Uuid,

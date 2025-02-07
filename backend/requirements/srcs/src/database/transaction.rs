@@ -34,7 +34,7 @@ pub trait ITransaction {
 		product_id: &Uuid,
 		to_decrease: i32,
 	) -> Result<&'a mut Self, Self::Error>;
-	
+
 	async fn increase_product_stock<'a>(
 		&'a mut self,
 		product_id: &Uuid,
@@ -206,5 +206,11 @@ impl<'a> std::ops::Deref for DBTransaction<'a> {
         self.tx.deref()
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	// TODO!: make tests !
 }
 

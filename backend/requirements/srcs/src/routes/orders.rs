@@ -161,7 +161,9 @@ async fn delete(
 }
 
 mod tests {
-	use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, HeaderValue}}, test, App};
+	use core::panic;
+
+use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, HeaderValue}}, test, App};
 	use sqlx::{Pool, Postgres};
 	
 	use crate::{
@@ -256,7 +258,7 @@ mod tests {
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn post_order(pool: Pool<Postgres>) {
-        let (data, _, data3) = init_test_orders(&pool).await;
+        let (data, data2, _) = init_test_orders(&pool).await;
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
 
@@ -278,7 +280,7 @@ mod tests {
             )
             .uri("/orders")
 			.set_json( CreateOrderDto {
-				product_id: data3.product_id,
+				product_id: data2.product_id,
 				order_details_id: None,
 				products_number: 1,
 			})
@@ -286,6 +288,7 @@ mod tests {
 
         let resp = test::call_service(&app, req).await;
 
+        // panic!("{:#?}", test::read_body(resp).await);
         assert_eq!(resp.status(), http::StatusCode::OK);
 
 		let body = test::read_body(resp).await;
@@ -294,7 +297,7 @@ mod tests {
 		
 		assert_eq!(response.status, Status::Success);
 		assert_eq!(response.data.user_id, data.user_id);
-		assert_eq!(response.data.product_id, data3.product_id);
+		assert_eq!(response.data.product_id, data2.product_id);
 		assert_eq!(response.data.order_details_id, None);
 		assert_eq!(response.data.products_number, 1);
     }
