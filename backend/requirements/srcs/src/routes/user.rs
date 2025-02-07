@@ -14,7 +14,7 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 			.service(get_by_id)
 			.service(get_all)
 			.service(delete)
-			// .service(add_sold)
+			.service(add_sold)
 
             .configure(orders::config)
             .configure(products::config)

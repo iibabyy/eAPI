@@ -117,7 +117,7 @@ async fn register(
 		})),
 
 		Err(sqlx::Error::Database(db_err)) => {
-			if db_err.is_unique_violation()		{ HttpError::unique_constraint_voilation(ErrorMessage::EmailExist).into() }
+			if db_err.is_unique_violation()		{ HttpError::conflict(ErrorMessage::EmailExist).into() }
 			else	{ HttpError::server_error(db_err.to_string()).into() }
 		},
 

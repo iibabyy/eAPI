@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS orders (
 		-- Vérifie si l'utilisateur essaie de commander son propre produit
 		IF EXISTS (
 			SELECT 1
-			FROM product
+			FROM products
 			WHERE id = NEW.product_id AND user_id = NEW.user_id
 		) THEN
 			RAISE EXCEPTION 'auto-buying';

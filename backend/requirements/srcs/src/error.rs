@@ -39,6 +39,7 @@ pub enum ErrorMessage {
     UserNoLongerExist,
     UserNotFound,
     ProductNoLongerExist,
+    ProductOutOfStock,
     ProductNotFound,
     NotEnoughProducts(i32),
     OrderNoLongerExist,
@@ -48,12 +49,6 @@ pub enum ErrorMessage {
     RefreshTokenNotProvided,
     PermissionDenied,
     AutoBuying,
-}
-
-impl ToString for ErrorMessage {
-    fn to_string(&self) -> String {
-        self.to_str().to_owned()
-    }
 }
 
 impl Into<String> for ErrorMessage {
@@ -87,7 +82,14 @@ impl ErrorMessage {
             ErrorMessage::NotEnoughProducts(_) => "0 products remaining".to_string(),
             ErrorMessage::SoldTooLow => "Sold too low".to_string(),
             ErrorMessage::AutoBuying => "Impossible to buy your own article".to_string(),
+            ErrorMessage::ProductOutOfStock => "Product out of stock".to_string(),
         }
+    }
+}
+
+impl fmt::Display for ErrorMessage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_str())
     }
 }
 
@@ -117,7 +119,10 @@ impl From<sqlx::Error> for HttpError {
 
                 match message {
                     "auto-buying" => HttpError::bad_request(ErrorMessage::AutoBuying),
-                    _ => HttpError::server_error(ErrorMessage::ServerError),
+                    _ => {
+                        eprintln!("Warning: unknown database error: {} -> convert it to server error", message);
+                        HttpError::server_error(ErrorMessage::ServerError)
+                    },
                 }
             },
 
@@ -148,7 +153,7 @@ impl HttpError {
         }
     }
 
-    pub fn unique_constraint_voilation(message: impl Into<String>) -> Self {
+    pub fn conflict(message: impl Into<String>) -> Self {
         HttpError {
             message: message.into(),
             status: 409,

@@ -1,9 +1,8 @@
 use actix_web::{delete, get, post, web::{self, Json}, HttpResponse};
-use colored::Colorize;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{database::{transaction::{DBTransaction, ITransaction}, OrderExtractor, ProductExtractor}, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, utils::{status::Status, AppState}};
+use crate::{database::{transaction::{DBTransaction, ITransaction}, OrderExtractor, ProductExtractor}, dtos::orders::{CreateOrderDto, FilterOrderDto, FilterOrderResponseDto, OrderDto, OrderResponseDto}, error::{ErrorMessage, HttpError}, extractors::auth::{Authenticated, RequireAuth}, models::{Order, Product, User}, utils::{status::Status, AppState}};
 
 pub fn config(config: &mut web::ServiceConfig) {
 	config
@@ -11,6 +10,7 @@ pub fn config(config: &mut web::ServiceConfig) {
 			.service(create)
 			.service(get_by_id)
 			.service(delete)
+			.service(validate)
 		);
 }
 
@@ -45,8 +45,30 @@ async fn get_by_id(
 	)
 }
 
+fn check_order(
+    user: &User,
+    product: &Product,
+    order: &Order,
+) -> Result<(), HttpError> {
+
+    if product.user_id == user.id {
+        // if user want to buy his own product
+        return HttpError::bad_request(ErrorMessage::AutoBuying).into()
+    } else if product.number_in_stock < order.products_number {
+        return HttpError::conflict(ErrorMessage::ProductOutOfStock).into()
+    }
+
+    let total_cost = product.price_in_cents * order.products_number as i64;
+
+    if user.sold_in_cents < total_cost {
+        return HttpError::payment_required(ErrorMessage::SoldTooLow).into()
+    }
+
+    Ok(())
+}
+
 // TODO!: Add tests for this endpoint
-#[post("/{order_id}/validate")]
+#[post("/{order_id}/validate", wrap = "RequireAuth")]
 async fn validate(
 	user: Authenticated,
 	order_id: web::Path<Uuid>,
@@ -56,25 +78,24 @@ async fn validate(
         .await
         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-    let order = data.db_client
+    let order: Order = data.db_client
         .get_order_if_belong_to_user(&user.id, &order_id).await
         .map_err(|err| HttpError::from(err))?
         .ok_or_else(|| HttpError::not_found(ErrorMessage::OrderNoLongerExist))?;
 
-    let product = data.db_client
+    let product: Product = data.db_client
         .get_product(&order.product_id).await
         .map_err(|err| HttpError::from(err))?
         .ok_or_else(|| HttpError::not_found(ErrorMessage::ProductNoLongerExist))?;
 
-    if product.user_id == user.id {
-        // if user want to buy his own product
-        return Err(HttpError::bad_request(ErrorMessage::AutoBuying).into())
-    }
+    check_order(&user, &product, &order)?;
+
+    let total_cost = product.price_in_cents * order.products_number as i64;
 
     tx
         .lock_user(&user.id).await
             .map_err(|err| HttpError::from(err))?
-        .decrease_user_sold(&user.id, product.price_in_cents * order.products_number as i64).await
+        .decrease_user_sold(&user.id, total_cost).await
             .map_err(|err| HttpError::from(err))?
         .lock_product(&product.id).await
             .map_err(|err| HttpError::from(err))?
