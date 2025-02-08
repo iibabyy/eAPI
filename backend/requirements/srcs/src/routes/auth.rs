@@ -1,9 +1,12 @@
 use actix_web::{cookie::{time::Duration, CookieBuilder}, error::ErrorUnauthorized, get, post, web::{self, Json}, HttpRequest, HttpResponse};
+use bcrypt::DEFAULT_COST;
+use futures_util::TryFutureExt;
 use jsonwebtoken::{DecodingKey, Validation};
 use serde_json::json;
+use uuid::Uuid;
 use validator::Validate;
 
-use crate::{database::UserExtractor, dtos::{self, users::*}, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{constants, password, status::Status, token::{self, extract_token_from, TokenClaims}, AppState}};
+use crate::{database::{transaction::{DBTransaction, ITransaction}, UserExtractor, UserModifier, UserUtils}, dtos::{self, users::*}, error::{ErrorMessage, HttpError}, extractors::auth::RequireAuth, utils::{constants, password, status::Status, token::{self, extract_token_from, TokenClaims}, AppState}};
 
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
@@ -16,32 +19,25 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 	);
 }
 
-
-const TOKEN_MAX_AGE_IN_SECONDS: i64 = 5 * 60;
-
 #[post("/login")]
 async fn login (
     infos: Json<LoginUserDto>,
 	data: web::Data<AppState>
 ) -> Result <HttpResponse, HttpError> {
-	let infos = infos.into_inner();
-
 	infos.validate()
-		.map_err(|err| HttpError::bad_request(err.to_string()))?;
+	.map_err(|err| HttpError::bad_request(err.to_string()))?;
 
 	// searching user
+	let infos = infos.into_inner();
 
-	let result = data
+	let user = data
 		.db_client
 		.get_user_by_email(infos.email)
 		.await
-		.map_err(|err| HttpError::server_error(err.to_string()))?;
+		.map_err(|err| HttpError::server_error(err.to_string()))?
+		.ok_or_else(|| HttpError::unauthorized(ErrorMessage::WrongCredentials))?;
 
-	if result.is_none() { return HttpError::unauthorized(ErrorMessage::WrongCredentials).into() }
-	let user = result.unwrap();
-	
 	// check passwords
-
 	let password_matches = match password::compare(&infos.password, &user.password) {
 		Ok(result) => result,
 		Err(ErrorMessage::HashingError) => return HttpError::server_error(ErrorMessage::HashingError).into(),
@@ -51,20 +47,30 @@ async fn login (
 	if password_matches == false { return HttpError::unauthorized(ErrorMessage::WrongCredentials).into() }
 
 	// building response
+	let token_id = Uuid::new_v4();
 
 	let token = token::create_token(
-		&user.id.to_string(),
+			&user.id,
+			data.env.secret_key.as_bytes(),
+			data.env.jwt_max_seconds,
+			&token_id,
+		)
+		.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
+
+	let refresh_token = token::create_token(
+		&user.id,
 		data.env.secret_key.as_bytes(),
-		data.env.jwt_max_seconds,
+		60 * 10, // 10mn	// TODO: change this for prod
+		&Uuid::nil(),
 	)
 	.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
 
-	let refresh_token = token::create_token(
-		&user.id.to_string(),
-		data.env.secret_key.as_bytes(),
-		60 * 10, // 10mn	// TODO: change this for prod
-	)
-	.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
+	let _ = data.db_client.modify_user_last_token_id(
+			Some(&token_id),
+			&user.id
+		)
+		.await
+		.map_err(|err| HttpError::from(err))?;
 
 	let filtered_user = FilterUserDto::filter_user(&user);
 
@@ -144,21 +150,57 @@ async fn refresh(
 	data: web::Data<AppState>,
 ) -> Result<HttpResponse, HttpError> {
 
-	// verify deprecated token
-	let deprecated_token = match extract_token_from(&request) {
-		Ok(token) => token,
-		Err(err) => return HttpError::unauthorized(err.message).into(),
-	};
-
 	// find refresh-token
 	let refresh_token = request
 		.cookie(&constants::REFRESH_TOKEN)
 		.ok_or_else(|| HttpError::unauthorized(ErrorMessage::RefreshTokenNotProvided))?;
 
-	let user_id = token::decode_token(refresh_token.value(), data.env.secret_key.as_bytes())?;
+	let refresh_token_claims = token::decode_token(refresh_token.value(), data.env.secret_key.as_bytes())?;
+	let refresh_user_id = refresh_token_claims.sub;
 
-	let new_token = token::create_token(&user_id, data.env.secret_key.as_bytes(), data.env.jwt_max_seconds)
+	// verify deprecated token
+
+	let deprecated_token = match extract_token_from(&request) {
+		Ok(token) => token,
+		Err(err) => return HttpError::unauthorized(err.message).into(),
+	};
+
+	let deprecated_claims = token::decode_token(deprecated_token, data.env.secret_key.as_bytes())?;
+	let deprecated_user_id = deprecated_claims.sub;
+
+	if deprecated_user_id != refresh_user_id {
+		return HttpError::unauthorized(ErrorMessage::InvalidToken).into()
+	}
+
+	// check if it was the last active token
+	let is_last_token = data.db_client
+		.check_is_last_token(&deprecated_claims.jti, &refresh_user_id).await
+		.map_err(|err| HttpError::from(err))?;
+
+	if is_last_token == false {
+		return HttpError::unauthorized(ErrorMessage::InvalidToken).into()
+	}
+
+	// create the new token
+	let new_token_id = Uuid::new_v4();
+
+	let new_token = token::create_token(
+			&refresh_user_id,
+			data.env.secret_key.as_bytes(),
+			data.env.jwt_max_seconds,
+			&new_token_id,
+		)
 		.map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
+
+	// set the new token id as the user's last active token
+	DBTransaction::begin(data.db_client.pool()).await
+			.map_err(|err| HttpError::from(err))?
+		// .lock_user(&new_token_id).await
+		// 	.map_err(|err| HttpError::from(err))?
+		.save_user_token_id(&new_token_id, &refresh_user_id).await
+			.map_err(|err| HttpError::from(err))?
+		.commit().await
+			.map_err(|err| HttpError::from(err))?;
 
 	Ok(
 		HttpResponse::Ok().json(json!({
@@ -366,10 +408,11 @@ use uuid::Uuid;
 			.expect("refresh-token cookie not found");
 
 		let refresh_token_subject = token::decode_token(
-			refresh_token.value(),
-			config.secret_key.as_bytes()
-		)
-		.unwrap();
+				refresh_token.value(),
+				config.secret_key.as_bytes()
+			)
+			.unwrap()
+			.sub;
 
 		// deserialize response and get the authentication token
 		let authentication_token = serde_json::from_slice::<LoginResponseDto>(&test::read_body(response).await)
@@ -381,12 +424,13 @@ use uuid::Uuid;
 				authentication_token,
 				config.secret_key.as_bytes()
 			)
-			.unwrap();
+			.unwrap()
+			.sub;
 
 		assert_eq!(refresh_token_subject, authentication_token_subject);
 
 		let token_subject = db_client
-			.get_user(&Uuid::parse_str(&authentication_token_subject).unwrap())
+			.get_user(&authentication_token_subject)
 			.await
 			.expect("Failed to get user")
 			.expect("User not found");

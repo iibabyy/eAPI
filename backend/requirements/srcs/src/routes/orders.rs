@@ -74,10 +74,6 @@ async fn validate(
 	order_id: web::Path<Uuid>,
 	data: web::Data<AppState>,
 ) -> Result<HttpResponse, HttpError> {
-    let mut tx = DBTransaction::begin(data.db_client.pool())
-        .await
-        .map_err(|err| HttpError::from(err))?;
-
     let order: Order = data.db_client
         .get_order_if_belong_to_user(&user.id, &order_id).await
         .map_err(|err| HttpError::from(err))?
@@ -93,13 +89,14 @@ async fn validate(
     let total_cost = product.price_in_cents * order.products_number as i64;
 
     // building a transaction to thread-safely modify values in database
-    tx
-        .lock_user(&user.id).await
-            .map_err(|err| HttpError::from(err))?
+    DBTransaction::begin(data.db_client.pool()).await
+           .map_err(|err| HttpError::from(err))?
+        // .lock_user(&user.id).await
+        //     .map_err(|err| HttpError::from(err))?
         .decrease_user_sold(&user.id, total_cost).await
             .map_err(|err| HttpError::from(err))?
-        .lock_product(&product.id).await
-            .map_err(|err| HttpError::from(err))?
+        // .lock_product(&product.id).await
+        //     .map_err(|err| HttpError::from(err))?
         .decrease_product_stock(&product.id, order.products_number).await
             .map_err(|err| HttpError::from(err))?
         .commit().await
@@ -193,7 +190,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -233,7 +230,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -273,7 +270,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -319,7 +316,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -363,7 +360,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -402,7 +399,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -442,7 +439,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data3.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data3.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -482,7 +479,7 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(

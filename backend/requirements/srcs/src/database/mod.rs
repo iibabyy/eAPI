@@ -139,3 +139,24 @@ pub trait OrderExtractor {
 		limit: usize,
 	) -> Result<Vec<Order>, sqlx::Error>;
 }
+
+#[async_trait]
+pub trait UserModifier: UserExtractor {
+
+	async fn modify_user_last_token_id(
+		&self,
+		value: Option<&Uuid>,
+		user_id: &Uuid,
+	) -> Result<(), sqlx::Error>;
+}
+
+#[async_trait]
+pub trait UserUtils: UserExtractor {
+
+	async fn check_is_last_token(
+		&self,
+		token_id: &String,
+		user_id: &Uuid,
+	) -> Result<bool, sqlx::Error>;
+
+}

@@ -72,13 +72,8 @@ async fn add_sold(
     infos.validate()
         .map_err(|err| HttpError::bad_request(err.to_string()))?;
 
-    let mut tx = DBTransaction::begin(data.db_client.pool())
-        .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
-
-    tx
-        .lock_user(&user.id).await
-            .map_err(|err| HttpError::from(err))?
+    DBTransaction::begin(data.db_client.pool()).await
+            .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?
         .increase_user_sold(&user.id, infos.sold_to_add).await
             .map_err(|err| HttpError::from(err))?
         .commit().await
@@ -291,7 +286,7 @@ mod tests {
         let config = test_config();
 
         let token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
@@ -332,7 +327,7 @@ mod tests {
         let config = test_config();
 
         let token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
@@ -458,7 +453,7 @@ mod tests {
         let config = test_config();
 
         let expired_token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), -60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &Uuid::new_v4()).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -504,7 +499,7 @@ mod tests {
         let config = test_config();
 
         let token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -622,7 +617,7 @@ mod tests {
         let config = test_config();
 
         let expired_token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), -60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &Uuid::new_v4()).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -674,7 +669,7 @@ mod tests {
             .unwrap();
 
         let token =
-            token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+            token::create_token(&user.id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -712,7 +707,7 @@ mod tests {
         let config = test_config();
 
         let token =
-            token::create_token(&user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -834,9 +829,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &data.user_id.to_string(),
+                    &data.user_id,
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
             let initial_user = db_client.get_user(&data.user_id).await.expect("Failed to get user by id").unwrap();
@@ -879,9 +875,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &data.user_id.to_string(),
+                    &data.user_id,
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
             let app = test::init_service(
@@ -913,9 +910,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &Uuid::new_v4().to_string(),
+                    &Uuid::new_v4(),
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
             let app = test::init_service(
@@ -946,9 +944,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &data.user_id.to_string(),
+                    &data.user_id,
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
     
@@ -997,9 +996,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &data.user_id.to_string(),
+                    &data.user_id,
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
             let app = test::init_service(
@@ -1052,9 +1052,10 @@ mod tests {
             let config = test_config();
     
             let token = token::create_token(
-                    &Uuid::new_v4().to_string(),
+                    &Uuid::new_v4(),
                     config.secret_key.as_bytes(),
-                    60
+                    60,
+                    &Uuid::new_v4(),
                 ) .unwrap();
     
             let app = test::init_service(

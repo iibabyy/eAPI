@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // creating db connection pool
     let db_client = DBClient::new(
         PgPoolOptions::new()
-            .max_connections(10)
+            .max_connections(25)
             .connect(&config.database_url)
             .await?
     );

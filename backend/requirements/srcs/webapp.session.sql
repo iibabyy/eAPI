@@ -1,1 +1,1 @@
-SELECT * FROM products;
+SELECT last_token_id FROM users;

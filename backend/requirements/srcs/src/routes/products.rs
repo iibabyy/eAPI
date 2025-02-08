@@ -200,7 +200,7 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -248,7 +248,7 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -297,7 +297,7 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&Uuid::new_v4().to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&Uuid::new_v4(), config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -337,7 +337,7 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -375,7 +375,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -414,7 +414,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -461,7 +461,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -508,7 +508,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -555,7 +555,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -594,7 +594,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -634,7 +634,7 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(

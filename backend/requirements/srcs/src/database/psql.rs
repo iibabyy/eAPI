@@ -1,12 +1,13 @@
 use std::ops::DerefMut;
 
 use async_trait::async_trait;
+use bcrypt::DEFAULT_COST;
 use sqlx::{pool::maybe::MaybePoolConnection, PgConnection, Pool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::{error::HttpError, models::{Order, Product, User}};
+use crate::{error::HttpError, models::{Order, Product, User}, utils::password};
 
-use super::{OrderExtractor, ProductExtractor, UserExtractor};
+use super::{OrderExtractor, ProductExtractor, UserExtractor, UserModifier, UserUtils};
 
 
 #[derive(Debug, Clone)]
@@ -36,7 +37,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE id = $1
 			"#,
@@ -55,7 +56,7 @@ impl UserExtractor for DBClient {
 		let user: Option<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE email = $1
 			"#,
@@ -78,7 +79,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE name = $1
 			LIMIT $2
@@ -104,7 +105,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			LIMIT $1
 			OFFSET $2
@@ -129,7 +130,7 @@ impl UserExtractor for DBClient {
 		let users: Vec<User> = sqlx::query_as!(
 			User,
 			r#"
-			SELECT id, name, email, password, sold_in_cents, created_at, updated_at
+			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE starts_with(name, $1)
 			LIMIT $2
@@ -156,7 +157,7 @@ impl UserExtractor for DBClient {
 			r#"
 			INSERT INTO users ( name, email, password )
 			VALUES ( $1, $2, $3 )
-			RETURNING id, name, email, password, sold_in_cents, updated_at, created_at
+			RETURNING id, name, email, password, sold_in_cents, last_token_id, updated_at, created_at
 			"#,
 			name.into(),
 			email.into(),
@@ -191,6 +192,39 @@ impl UserExtractor for DBClient {
 
 }
 
+#[async_trait]
+impl UserModifier for DBClient {
+
+	async fn modify_user_last_token_id(
+		&self,
+		value: Option<&Uuid>,
+		user_id: &Uuid,
+	) -> Result<(), sqlx::Error> {
+		let value =
+			if let Some(token_id) = value {
+				Some(
+					bcrypt::hash(token_id.to_string(), 4)
+						.map_err(|_| sqlx::Error::WorkerCrashed)?
+				)
+			}
+			else { None };
+
+		sqlx::query!(
+			r#"
+			UPDATE users
+			SET last_token_id = $1
+			WHERE id = $2
+			"#,
+			value,
+			user_id,
+		)
+		.execute(self.pool())
+		.await?;
+
+		Ok(())
+	}
+
+}
 
 #[async_trait]
 impl ProductExtractor for DBClient {
@@ -501,6 +535,32 @@ impl OrderExtractor for DBClient {
 
 		Ok(orders)
 	}
+
+}
+
+#[async_trait]
+impl UserUtils for DBClient {
+	async fn check_is_last_token(
+		&self,
+		token_id: &String,
+		user_id: &Uuid,
+	) -> Result<bool, sqlx::Error> {
+		let user = self.get_user(user_id)
+			.await?
+			.ok_or_else(|| sqlx::Error::RowNotFound)?;
+
+		if let Some(hashed_last_token_id) = user.last_token_id {
+			let result = bcrypt::verify(token_id, &hashed_last_token_id);
+
+			if let Some(is_valid) = result.ok() { return Ok(is_valid) }
+			else { return Ok(false) }
+		} else {
+			// no last token (first time loging)
+			return Ok(false)
+		}
+	}
+
+	
 
 }
 

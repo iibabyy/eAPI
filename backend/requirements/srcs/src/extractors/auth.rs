@@ -68,11 +68,11 @@ where
 
 		let app_state = req.app_data::<web::Data<AppState>>().unwrap();
 
-		let user_id = match utils::token::decode_token(
+		let jwt_claims = match utils::token::decode_token(
 			&token,
 			app_state.env.secret_key.as_bytes()
 		) {
-			Ok(id) => id,
+			Ok(claims) => claims,
 			Err(e) => {
 				return Box::pin(ready(Err(ErrorUnauthorized(ErrorResponse {
 					status: "fail".to_string(),
@@ -81,24 +81,49 @@ where
 			}
 		};
 
+		let user_id = jwt_claims.sub;
+		let jwt_id = jwt_claims.jti;
+
 		let cloned_app_state = app_state.clone();
 		let cloned_service = Rc::clone(&self.service);
 
 		async move {
-			let user_id = Uuid::parse_str(&user_id).unwrap();
-			let result = cloned_app_state
+			let user = cloned_app_state
 				.db_client
 				.get_user(&user_id)
 				.await
-				.map_err(|e| ErrorInternalServerError(HttpError::server_error(e.to_string())))?;
-
-			let user = match result {
-				Some(user) => user,
-				None => return Err(ErrorUnauthorized(ErrorResponse {
+				.map_err(|e| ErrorInternalServerError(HttpError::server_error(e.to_string())))?
+				.ok_or_else(|| ErrorUnauthorized(ErrorResponse {
 					status: "fail".to_string(),
 					message: ErrorMessage::UserNotFound.to_string(),
-				}))
-			};
+				}))?;
+
+			// check if it was the last active token
+			if user.last_token_id.is_none() {
+				return Err(
+					ErrorUnauthorized(ErrorResponse {
+						status: "fail".to_string(),
+						message: ErrorMessage::InvalidToken.to_string(),
+					})
+				)
+			}
+
+			let last_token_id = user.last_token_id.as_ref().unwrap();
+
+			let is_last_token = bcrypt::verify(jwt_id, last_token_id)
+				.map_err(|_| ErrorInternalServerError(ErrorResponse {
+					status: "fail".to_string(),
+					message: ErrorMessage::ServerError.to_string(),
+				}))?;
+
+			if is_last_token == false {
+				return Err(
+					ErrorUnauthorized(ErrorResponse {
+						status: "fail".to_string(),
+						message: ErrorMessage::InvalidToken.to_string(),
+					})
+				)
+			}
 
 			// store user information for next middlewares/endpoint handlers
 			req.extensions_mut().insert::<User>(user);
@@ -174,7 +199,7 @@ mod tests {
 			.await
 			.unwrap();
 
-		let token = token::create_token(&user.id.to_string(), config.secret_key.as_bytes(), 60).unwrap();
+		let token = token::create_token(&user.id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
 		
 		let request = test::TestRequest::default()
 			.insert_header(
