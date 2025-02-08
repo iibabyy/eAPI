@@ -4,42 +4,42 @@ use sqlx::{pool::maybe::MaybePoolConnection, PgConnection, Pool, Postgres, Trans
 use sqlx_core::database::Database;
 use uuid::Uuid;
 
-pub trait ITransaction {
+pub trait ITransaction: Sized {
 	type Error;
 
-	async fn lock_user<'a>(
-		&'a mut self,
+	async fn lock_user(
+		self,
 		user_id: &Uuid,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 	
-	async fn decrease_user_sold<'a>(
-		&'a mut self,
+	async fn decrease_user_sold(
+		self,
 		user_id: &Uuid,
 		to_decrease: i64,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 	
-	async fn increase_user_sold<'a>(
-		&'a mut self,
+	async fn increase_user_sold(
+		self,
 		user_id: &Uuid,
 		to_increase: i64,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 
-	async fn lock_product<'a>(
-		&'a mut self,
+	async fn lock_product(
+		self,
 		product_id: &Uuid,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 	
-	async fn decrease_product_stock<'a>(
-		&'a mut self,
+	async fn decrease_product_stock(
+		self,
 		product_id: &Uuid,
 		to_decrease: i32,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 
-	async fn increase_product_stock<'a>(
-		&'a mut self,
+	async fn increase_product_stock(
+		self,
 		product_id: &Uuid,
 		to_increase: i32,
-	) -> Result<&'a mut Self, Self::Error>;
+	) -> Result<Self, Self::Error>;
 
 }
 
@@ -71,30 +71,30 @@ impl<'c> DBTransaction<'c> {
 impl ITransaction for DBTransaction<'_> {
 	type Error = sqlx::Error;
 
-	async fn lock_user<'a>(
-			&'a mut self,
-			user_id: &Uuid,
-		) -> Result<&'a mut Self, Self::Error> {
-			let _ = sqlx::query!(
-				r#"
-				SELECT
-				FROM users
-				WHERE id = $1
-				FOR UPDATE
-				"#,
-				user_id,
-			)
-			.execute(self.deref_mut())
-			.await?;
-	
-			Ok(self)
+	async fn lock_user(
+		mut self,
+		user_id: &Uuid,
+	) -> Result<Self, Self::Error> {
+		let _ = sqlx::query!(
+			r#"
+			SELECT
+			FROM users
+			WHERE id = $1
+			FOR UPDATE
+			"#,
+			user_id,
+		)
+		.execute(self.deref_mut())
+		.await?;
+
+		Ok(self)
 	}
 
-	async fn decrease_user_sold<'a>(
-		&'a mut self,
+	async fn decrease_user_sold(
+		mut self,
 		user_id: &Uuid,
 		to_decrease: i64,
-	) -> Result<&'a mut Self, Self::Error> {
+	) -> Result<Self, Self::Error> {
 			let _ = sqlx::query!(
 				r#"
 				UPDATE users
@@ -110,11 +110,11 @@ impl ITransaction for DBTransaction<'_> {
 			Ok(self)
 	}
 
-	async fn increase_user_sold<'a>(
-		&'a mut self,
+	async fn increase_user_sold(
+		mut self,
 		user_id: &Uuid,
 		to_increase: i64,
-	) -> Result<&'a mut Self, Self::Error> {
+	) -> Result<Self, Self::Error> {
 			let _ = sqlx::query!(
 				r#"
 				UPDATE users
@@ -130,10 +130,10 @@ impl ITransaction for DBTransaction<'_> {
 			Ok(self)
 	}
 
-	async fn lock_product<'a>(
-		&'a mut self,
+	async fn lock_product(
+		mut self,
 		product_id: &Uuid,
-	) -> Result<&'a mut Self, Self::Error> {
+	) -> Result<Self, Self::Error> {
 
 			let _ = sqlx::query!(
 				r#"
@@ -150,11 +150,11 @@ impl ITransaction for DBTransaction<'_> {
 			Ok(self)
 	}
 
-	async fn decrease_product_stock<'a>(
-		&'a mut self,
+	async fn decrease_product_stock(
+		mut self,
 		product_id: &Uuid,
 		to_decrease: i32,
-	) -> Result<&'a mut Self, Self::Error> {
+	) -> Result<Self, Self::Error> {
 		
 			sqlx::query!(
 				r#"
@@ -171,11 +171,11 @@ impl ITransaction for DBTransaction<'_> {
 			Ok(self)
 	}
 
-	async fn increase_product_stock<'a>(
-		&'a mut self,
+	async fn increase_product_stock(
+		mut self,
 		product_id: &Uuid,
 		to_increase: i32,
-	) -> Result<&'a mut Self, Self::Error> {
+	) -> Result<Self, Self::Error> {
 		
 			sqlx::query!(
 				r#"

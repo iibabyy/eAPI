@@ -80,9 +80,7 @@ async fn add_sold(
         .lock_user(&user.id).await
             .map_err(|err| HttpError::from(err))?
         .increase_user_sold(&user.id, infos.sold_to_add).await
-            .map_err(|err| HttpError::from(err))?;
-    
-    tx
+            .map_err(|err| HttpError::from(err))?
         .commit().await
             .map_err(|err| HttpError::from(err))?;
 

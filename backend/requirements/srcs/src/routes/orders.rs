@@ -76,7 +76,7 @@ async fn validate(
 ) -> Result<HttpResponse, HttpError> {
     let mut tx = DBTransaction::begin(data.db_client.pool())
         .await
-        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
+        .map_err(|err| HttpError::from(err))?;
 
     let order: Order = data.db_client
         .get_order_if_belong_to_user(&user.id, &order_id).await
@@ -92,6 +92,7 @@ async fn validate(
 
     let total_cost = product.price_in_cents * order.products_number as i64;
 
+    // building a transaction to thread-safely modify values in database
     tx
         .lock_user(&user.id).await
             .map_err(|err| HttpError::from(err))?
@@ -100,9 +101,9 @@ async fn validate(
         .lock_product(&product.id).await
             .map_err(|err| HttpError::from(err))?
         .decrease_product_stock(&product.id, order.products_number).await
+            .map_err(|err| HttpError::from(err))?
+        .commit().await
             .map_err(|err| HttpError::from(err))?;
-
-    tx.commit().await.map_err(|err| HttpError::from(err))?;
 
     Ok( HttpResponse::NoContent().finish() )
     
