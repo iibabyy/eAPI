@@ -139,6 +139,8 @@ async fn logout() -> HttpResponse {
 		.http_only(true)
 		.finish();
 
+	// TODO!: set the last_token_id of the user (db) to NULL
+
 	HttpResponse::Ok()
 		.cookie(cookie)
 		.json(json!({"status": Status::Success}))
