@@ -17,9 +17,9 @@ jobs:
     - name: Starting Containers
       run: docker compose up -d
     - name: Installing sqlx-cli
-      run: cargo install sqlx-cli
+      run: cargo install sqlx-cli --verbose
     - name: Running migrations
-      run: cargo sqlx migrate run
+      run: cargo sqlx migrate run --verbose
     - name: Build
       run: cargo build --verbose
     - name: Run tests
