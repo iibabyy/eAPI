@@ -160,11 +160,11 @@ mod tests {
     use sqlx::{Pool, Postgres};
 
     use crate::{
-        database::psql::DBClient,
+        database::{psql::DBClient, UserModifier},
         error::{ErrorMessage, ErrorResponse},
         utils::{
             password,
-            test_utils::{test_config, init_test_products},
+            test_utils::{init_test_products, test_config},
             token,
         },
     };
@@ -200,7 +200,13 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+            
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -248,7 +254,12 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -297,7 +308,12 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&Uuid::new_v4(), config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&Uuid::new_v4(), config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -337,7 +353,12 @@ mod tests {
             .await
             .unwrap();
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -375,7 +396,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -414,7 +440,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -461,7 +492,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -508,7 +544,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -555,7 +596,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -594,7 +640,12 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -634,7 +685,13 @@ mod tests {
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(

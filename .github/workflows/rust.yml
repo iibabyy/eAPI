@@ -14,10 +14,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Starting Container
+    - name: Starting Containers
       run: docker compose up -d
+    - name: Installing sqlx-cli
+      run: cargo install sqlx-cli
     - name: Running migrations
-      run: cargo install sqlx-cli && cargo sqlx migrate run
+      run: cargo sqlx migrate run
     - name: Build
       run: cargo build --verbose
     - name: Run tests

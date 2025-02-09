@@ -165,10 +165,10 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
 	use sqlx::{Pool, Postgres};
 	
 	use crate::{
-		database::psql::DBClient,
+		database::{psql::DBClient, UserModifier},
 		dtos::orders::*,
 		error::*,
-		utils::{*, test_utils::*},
+		utils::{test_utils::*, *},
 	};
 
 	use super::*;
@@ -190,7 +190,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -230,7 +235,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::get()
             .insert_header(
@@ -270,7 +280,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -316,7 +331,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::post()
             .insert_header(
@@ -360,7 +380,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -399,7 +424,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -439,7 +469,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data3.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data3.user_id).await
+            .unwrap();
+        
+        let token = token::create_token(&data3.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(
@@ -479,7 +514,12 @@ use actix_web::{cookie::CookieBuilder, http::{self, header::{self, HeaderName, H
         )
         .await;
 
-        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+
+        let token = token::create_token(&data.user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let req = test::TestRequest::delete()
             .insert_header(

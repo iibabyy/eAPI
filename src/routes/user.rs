@@ -268,7 +268,7 @@ mod tests {
     use sqlx::{Pool, Postgres};
 
     use crate::{
-        database::psql::DBClient,
+        database::{psql::DBClient, UserModifier},
         error::{ErrorMessage, ErrorResponse},
         utils::{
             password,
@@ -284,9 +284,13 @@ mod tests {
         let (user_id, _, _) = init_test_users(&pool).await;
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
+        
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user_id).await
+            .unwrap();
 
-        let token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+        let token = token::create_token(&user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
@@ -326,8 +330,13 @@ mod tests {
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
 
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user_id).await
+            .unwrap();
+
         let token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let initial_user = db_client.get_user(&user_id).await.expect("Failed to get user by id").unwrap();
 
@@ -451,20 +460,26 @@ mod tests {
         let (user_id, _, _) = init_test_users(&pool).await;
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
-
-        let expired_token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &Uuid::new_v4()).unwrap();
-
+        
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
                     env: config.clone(),
-                    db_client,
+                    db_client: db_client.clone(),
                 }))
                 .configure(super::config),
-        )
-        .await;
+            )
+            .await;
+    
+        let token_id = Uuid::new_v4();
+        db_client
+        .modify_user_last_token_id(Some(&token_id), &user_id).await
+        .unwrap();
 
+        let expired_token =
+            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &token_id).unwrap();
+        
+    
         let req = test::TestRequest::get()
             .insert_header(
                 (http::header::AUTHORIZATION, http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap())
@@ -498,8 +513,13 @@ mod tests {
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
 
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user_id).await
+            .unwrap();
+
         let token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -616,8 +636,13 @@ mod tests {
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
 
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user_id).await
+            .unwrap();
+
         let expired_token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &Uuid::new_v4()).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), -60, &token_id).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -668,8 +693,13 @@ mod tests {
             .await
             .unwrap();
 
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user.id).await
+            .unwrap();
+
         let token =
-            token::create_token(&user.id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+            token::create_token(&user.id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -706,8 +736,13 @@ mod tests {
         let db_client = DBClient::new(pool.clone());
         let config = test_config();
 
+        let token_id = Uuid::new_v4();
+        db_client
+            .modify_user_last_token_id(Some(&token_id), &user_id).await
+            .unwrap();
+
         let token =
-            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+            token::create_token(&user_id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 
         let app = test::init_service(
             App::new()
@@ -828,11 +863,16 @@ mod tests {
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
     
+            let token_id = Uuid::new_v4();
+            db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
             let token = token::create_token(
                     &data.user_id,
                     config.secret_key.as_bytes(),
                     60,
-                    &Uuid::new_v4(),
+                    &token_id,
                 ) .unwrap();
     
             let initial_user = db_client.get_user(&data.user_id).await.expect("Failed to get user by id").unwrap();
@@ -874,11 +914,16 @@ mod tests {
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
     
+            let token_id = Uuid::new_v4();
+            db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
             let token = token::create_token(
                     &data.user_id,
                     config.secret_key.as_bytes(),
                     60,
-                    &Uuid::new_v4(),
+                    &token_id,
                 ) .unwrap();
     
             let app = test::init_service(
@@ -908,9 +953,15 @@ mod tests {
         async fn get_user_product_with_invalid_token(pool: Pool<Postgres>) {
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
+            let (data, _, _) = init_test_orders(db_client.pool()).await;
     
+            let token_id = Uuid::new_v4();
+            db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
             let token = token::create_token(
-                    &Uuid::new_v4(),
+                    &data.user_id,
                     config.secret_key.as_bytes(),
                     60,
                     &Uuid::new_v4(),
@@ -943,11 +994,16 @@ mod tests {
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
     
+            let token_id = Uuid::new_v4();
+            db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
             let token = token::create_token(
                     &data.user_id,
                     config.secret_key.as_bytes(),
                     60,
-                    &Uuid::new_v4(),
+                    &token_id,
                 ) .unwrap();
     
     
@@ -994,14 +1050,19 @@ mod tests {
             let (data, data2, _) = init_test_orders(&pool).await;
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
-    
+
+            let token_id = Uuid::new_v4();
+            db_client
+            .modify_user_last_token_id(Some(&token_id), &data.user_id).await
+            .unwrap();
+        
             let token = token::create_token(
                     &data.user_id,
                     config.secret_key.as_bytes(),
                     60,
-                    &Uuid::new_v4(),
+                    &token_id,
                 ) .unwrap();
-    
+
             let app = test::init_service(
                 App::new()
                     .app_data(web::Data::new(AppState {

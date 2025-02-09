@@ -164,7 +164,7 @@ mod tests {
 	use actix_web::{cookie::Cookie, get, http::{self, header::{self, HeaderName, HeaderValue}}, test, web::Header, App, HttpResponse};
 	use sqlx::{Pool, Postgres};
 
-	use crate::{database::psql::DBClient, utils::{password, test_utils::{self, init_test_users}, token}};
+	use crate::{database::{psql::DBClient, UserModifier}, utils::{password, test_utils::{self, init_test_users}, token}};
 
 	use super::*;
 
@@ -199,7 +199,12 @@ mod tests {
 			.await
 			.unwrap();
 
-		let token = token::create_token(&user.id, config.secret_key.as_bytes(), 60, &Uuid::new_v4()).unwrap();
+		let token_id = Uuid::new_v4();
+		db_client
+		.modify_user_last_token_id(Some(&token_id), &user.id).await
+		.unwrap();
+	
+		let token = token::create_token(&user.id, config.secret_key.as_bytes(), 60, &token_id).unwrap();
 		
 		let request = test::TestRequest::default()
 			.insert_header(
