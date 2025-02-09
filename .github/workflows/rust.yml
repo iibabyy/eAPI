@@ -14,6 +14,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Starting Containers
+      run: docker compose up -d
     - name: Build
       run: cargo build --verbose
     - name: Run tests
