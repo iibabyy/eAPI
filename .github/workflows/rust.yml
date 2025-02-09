@@ -17,7 +17,7 @@ jobs:
     - name: Starting Containers
       run: docker compose up -d
     - name: Running migrations
-      run: sqlx migrate run
+      run: cargo sqlx migrate run
     - name: Build
       run: cargo build --verbose
     - name: Run tests
