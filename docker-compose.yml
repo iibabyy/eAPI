@@ -15,26 +15,15 @@ services:
   #     - api_srcs:/app
   #     - api_migrations:/var/lib/migrations
 
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend
+  # redis:
+  #   image: redis
+  #   container_name: redis
+  #   expose:
+  #     - 6379
   #   networks:
-  #     - app_network
+  #     - db_network
   #   ports:
-  #     - 8080:3000
-  #   volumes:
-  #     - frontend_srcs:/app
-
-
-  redis:
-    image: redis
-    container_name: redis
-    expose:
-      - 6379
-    networks:
-      - db_network
-    ports:
-      - 6370:6379
+  #     - 6370:6379
 
   db:
     image: postgres:15
@@ -69,23 +58,17 @@ volumes:
     #   type: 'none'
     #   o: 'bind'
     #   device: /lib/myapp/data
-  frontend_srcs:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: ./frontend/requirements
 
   api_srcs:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: ./backend/requirements/srcs
+      device: ./src
 
   api_migrations:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: ./backend/requirements/migrations
+      device: ./migrations

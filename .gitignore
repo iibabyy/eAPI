@@ -24,3 +24,7 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+
+# others
+webapp.session.sql

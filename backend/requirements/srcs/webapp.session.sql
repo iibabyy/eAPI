@@ -1,1 +1,0 @@
-SELECT last_token_id FROM users;
