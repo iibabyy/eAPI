@@ -19,7 +19,7 @@ jobs:
     - name: Installing sqlx-cli
       run: cargo install sqlx-cli --verbose
     - name: Running migrations
-      run: cargo sqlx migrate run --verbose
+      run: cargo sqlx migrate run
     - name: Build
       run: cargo build --verbose
     - name: Run tests
