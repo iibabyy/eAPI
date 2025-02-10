@@ -12,15 +12,16 @@ mod error;
 
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
+use colored::Colorize;
 use database::psql::DBClient;
 use sqlx::postgres::PgPoolOptions;
 use utils::{AppState, config::Config};
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // if std::env::var_os("RUST_LOG").is_none() {
-    std::env::set_var("RUST_LOG", "actix_web=info");
-    // }
+    if std::env::var_os("RUST_LOG").is_none() {
+        std::env::set_var("RUST_LOG", "actix_web=info");
+    }
 
     dotenvy::dotenv()?;
     env_logger::init();
@@ -40,9 +41,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     .create_pool(Some(Runtime::Tokio1))?;
     
     let port = config.port;
-
     
-    eprintln!("Server listening on port 0.0.0.0:{port}");
+    eprintln!(
+        "{}{}",
+        "Server listening on port 0.0.0.0:".bright_black(),
+        port.to_string().bright_black(),
+    );
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_header()

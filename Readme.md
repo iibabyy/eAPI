@@ -24,8 +24,8 @@ This project is a RESTful API built in Rust using the Actix-web framework and Po
 - Rust (latest stable version)
 - Cargo (Rust's package manager)
 
-### 1. Set Up the Database
-1. Start the the Postgresql container:
+### Instructions
+1. Start the Postgresql container:
 	```bash
 	docker compose up -d
 2. Install sqlx and run migrations:
@@ -36,3 +36,12 @@ This project is a RESTful API built in Rust using the Actix-web framework and Po
    ```bash
    cargo build --release
    cargo run --release
+
+### Cleaning
+1. Stop the Postgresql container:
+   ```bash
+   docker compose down
+
+2. Cleaning the project:
+   ```bash
+   cargo clean
