@@ -59,11 +59,7 @@ pub struct DBTransaction<'c> {
 
 impl<'c> DBTransaction<'c> {
 	pub async fn begin(pool: &Pool<Postgres>) -> Result<Self, sqlx::Error> {
-		let tx =
-			Transaction::begin(
-				MaybePoolConnection::PoolConnection(pool.acquire().await?)
-			)
-			.await?;
+		let tx = pool.begin().await?;
 
 		Ok(
 			Self { tx }
