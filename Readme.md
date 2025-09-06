@@ -2,6 +2,26 @@
 
 A modern, secure web API built with Rust and Actix-web framework, featuring JWT authentication, PostgreSQL database integration, and robust error handling.
 
+## Table of Contents
+- [MyAPI - Rust Web API with JWT Authentication](#myapi---rust-web-api-with-jwt-authentication)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+    - [Authentication System](#authentication-system)
+    - [User Management](#user-management)
+    - [Security](#security)
+    - [Database Integration](#database-integration)
+  - [Technology Stack](#technology-stack)
+  - [Setup and Configuration](#setup-and-configuration)
+    - [Environment Variables](#environment-variables)
+    - [Running the Application](#running-the-application)
+  - [API Endpoints](#api-endpoints)
+    - [Authentication](#authentication)
+    - [Protected Routes](#protected-routes)
+  - [Security Notes](#security-notes)
+  - [Development](#development)
+    - [Running Tests](#running-tests)
+    - [Building for Production](#building-for-production)
+
 ## Features
 
 ### Authentication System
