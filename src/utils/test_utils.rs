@@ -16,10 +16,10 @@ pub struct TestUser {
 
 pub fn test_config() -> Config {
 	Config {
-		database_url: "".to_string(),
-		redis_url: "".to_string(),
-		secret_key: "my-test-secret".to_string(),
 		port: 8000,
+		database_url: "".to_string(),
+		// redis_url: "".to_string(),
+		secret_key: "my-test-secret".to_string(),
 		jwt_max_seconds: 60 * 2,
 	}
 }

@@ -5,25 +5,25 @@ use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-	pub database_url: String,
-	pub redis_url: String,
-	pub secret_key: String,
 	pub port: u16,
+	pub database_url: String,
+	// pub redis_url: String,
+	pub secret_key: String,
 	pub jwt_max_seconds: i64,
 }
 
 impl Config {
 	pub fn init() -> Self {
 		let database_url = database_url();
-		let redis_url = redis_url();
+		// let redis_url = redis_url();
 		let port = port();
 		let secret_key = secret_key();
 		let jwt_max_age = jwt_max_age();
 
 		Self {
-			database_url,
-			redis_url,
 			port,
+			database_url,
+			// redis_url,
 			secret_key,
 			jwt_max_seconds: jwt_max_age,
 		}
@@ -42,7 +42,7 @@ fn jwt_max_age() -> i64 {
 }
 
 fn port() -> u16 {
-	env::var("LISTEN").unwrap_or("80".to_string()).parse::<u16>().expect(&format!("LISTEN: invalid value"))
+	env::var("LISTEN").unwrap_or("8000".to_string()).parse::<u16>().expect(&format!("LISTEN: invalid port"))
 }
 
 fn redis_url() -> String  {
@@ -57,18 +57,5 @@ fn redis_url() -> String  {
 }
 
 fn database_url() -> String {
-	let db_user = dotenv!("POSTGRES_USER");
-	let db_password = dotenv!("POSTGRES_PASSWORD");
-	let db_host = env::var("POSTGRES_HOST").unwrap_or("localhost".to_string());
-	let db_port = env::var("POSTGRES_PORT").unwrap_or("5432".to_string()).parse::<u16>().expect("POSTGRES_PORT: invalid value");
-	let db_name = dotenv!("POSTGRES_DB");
-
-	format!(
-		"postgres://{}:{}@{}:{}/{}",
-		db_user,
-		db_password,
-		db_host,
-		db_port,
-		db_name,
-	)
+	dotenv!("DATABASE_URL").to_string()
 }

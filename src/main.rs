@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 mod routes;
 mod utils;
@@ -27,7 +27,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let config = Config::init();
 
-
     // creating db connection pool
     let db_client = DBClient::new(
         PgPoolOptions::new()
@@ -44,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     eprintln!(
         "{}{}",
-        "Server listening on port 0.0.0.0:".bright_black(),
+        "Server listening on port 127.0.0.1:".bright_black(),
         port.to_string().bright_black(),
     );
 
