@@ -1,17 +1,17 @@
+mod database;
+mod dtos;
+mod error;
+mod extractors;
+mod models;
 mod routes;
 mod utils;
-mod extractors;
-mod dtos;
-mod models;
-mod database;
-mod error;
 
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use colored::Colorize;
-use database::{psql::DBClient, init::init_db};
+use database::{init::init_db, psql::DBClient};
 use sqlx::postgres::PgPoolOptions;
-use utils::{AppState, config::Config};
+use utils::{config::Config, AppState};
 
 #[cfg(test)]
 const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../migrations");
@@ -33,15 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         PgPoolOptions::new()
             .max_connections(25)
             .connect(&config.database_url)
-            .await?
+            .await?,
     );
 
     // // creating redis connection pool
     // let redis_pool = deadpool_redis::Config::from_url(&config.redis_url)
     //     .create_pool(Some(Runtime::Tokio1))?;
-    
+
     let port = config.port;
-    
+
     eprintln!(
         "{}{}",
         "Server listening on port 0.0.0.0:".bright_black(),
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     HttpServer::new(move || {
-        let app_data = web::Data::new( AppState {
+        let app_data = web::Data::new(AppState {
             db_client: db_client.clone(),
             // redis: redis_pool.clone(),
             env: config.clone(),
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .configure(routes::config)
             .wrap(Logger::new("%a %r %s"))
             .wrap(cors)
-            // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))
+        // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))
     })
     .bind(("0.0.0.0", port))?
     .run()

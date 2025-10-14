@@ -1,8 +1,10 @@
+use crate::{
+    models::User,
+    utils::status::{validate_password, Status},
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationError};
-use crate::{models::User, utils::status::{validate_password, Status}};
-
+use validator::Validate;
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,10 +18,10 @@ pub struct RegisterUserDto {
     )]
     pub email: String,
 
-    #[validate(custom(function="validate_password"))]
+    #[validate(custom(function = "validate_password"))]
     pub password: String,
 
-    #[validate(custom(function="validate_password"))]
+    #[validate(custom(function = "validate_password"))]
     pub password_confirm: String,
 }
 
@@ -32,10 +34,9 @@ pub struct LoginUserDto {
     )]
     pub email: String,
 
-	#[validate(custom(function="validate_password"))]
+    #[validate(custom(function = "validate_password"))]
     pub password: String,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -57,8 +58,12 @@ impl FilterForeignUserDto {
         }
     }
 
+    #[allow(dead_code)]
     pub fn filter_users(users: &[User]) -> Vec<FilterForeignUserDto> {
-        users.iter().map(|user| FilterForeignUserDto::filter_user(user)).collect()
+        users
+            .iter()
+            .map(FilterForeignUserDto::filter_user)
+            .collect()
     }
 }
 
@@ -116,7 +121,6 @@ pub struct LoginResponseDto {
 #[derive(Validate, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddSoldDto {
-
     // 1m cents -> 10k dollars
     #[validate(range(min = 1, max = 1_000_000, message = "Invalid field soldToAdd"))]
     pub sold_to_add: i64,

@@ -1,9 +1,8 @@
+use crate::{models::Product, utils::status::Status};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use validator::{Validate, ValidationError};
-use crate::{models::Product, utils::status::{validate_password, Status}};
-
+use validator::Validate;
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,8 +16,8 @@ pub struct CreateProductDto {
     #[validate(range(min = 1, max = 9999, message = "Invalid number in stock"))]
     pub number_in_stock: i32,
 
-	#[validate(range(min = 0, message = "Prices can not be negative"))]
-	pub price_in_cents: i64,
+    #[validate(range(min = 0, message = "Prices can not be negative"))]
+    pub price_in_cents: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,11 +1,9 @@
-pub mod users;
 pub mod orders;
 pub mod products;
+pub mod users;
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationError};
-use crate::{models::User, utils::status::{validate_password, Status}};
+use validator::Validate;
 
 #[derive(Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]

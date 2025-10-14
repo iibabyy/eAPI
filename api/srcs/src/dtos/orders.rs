@@ -1,15 +1,14 @@
+use crate::{models::Order, utils::status::Status};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use validator::{Validate, ValidationError};
-use crate::{models::Order, utils::status::{validate_password, Status}};
-
+use validator::Validate;
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateOrderDto {
-	pub product_id: Uuid,
-	pub order_details_id: Option<Uuid>,
+    pub product_id: Uuid,
+    pub order_details_id: Option<Uuid>,
 
     #[validate(range(min = 1, message = "Product number can only be more than 1"))]
     pub products_number: i32,
@@ -20,7 +19,7 @@ pub struct CreateOrderDto {
 pub struct OrderDto {
     pub id: uuid::Uuid,
     pub user_id: uuid::Uuid,
-	pub order_details_id: Option<Uuid>,
+    pub order_details_id: Option<Uuid>,
     pub products_number: i32,
     pub product_id: uuid::Uuid,
 
@@ -43,6 +42,7 @@ impl OrderDto {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterOrderDto {
@@ -55,6 +55,7 @@ pub struct FilterOrderDto {
 }
 
 impl FilterOrderDto {
+    #[allow(dead_code)]
     pub fn filter(order: &Order) -> Self {
         FilterOrderDto {
             id: order.id,
@@ -73,6 +74,7 @@ pub struct OrderResponseDto {
     pub data: OrderDto,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FilterOrderResponseDto {
     pub status: Status,
@@ -86,6 +88,7 @@ pub struct OrderListResponseDto {
     pub results: usize,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FilterOrderListResponseDto {
     pub status: Status,

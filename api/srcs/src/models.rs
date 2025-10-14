@@ -2,8 +2,6 @@ use chrono::prelude::*;
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
-use crate::utils;
-
 #[derive(PartialEq, Eq, Debug, Clone, FromRow)]
 pub struct User {
     pub id: Uuid,
@@ -38,7 +36,6 @@ pub struct Order {
     pub order_details_id: Option<Uuid>,
     pub products_number: i32,
     // others fields ?
-
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
