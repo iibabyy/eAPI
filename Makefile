@@ -1,20 +1,15 @@
-SRCS_PATH = ./api/srcs
+ABORT_ON_EXIT = --abort-on-container-exit --exit-code-from eapi
+DOCKER_COMPOSE = docker compose -f docker-compose.yml
+TEST_COMPOSE_FILE = docker-compose-tests.yml
+ALL_TEST_COMPOSE_FILE = docker-compose-all-tests.yml
+UP = up --build
 
-MANIFEST_PATH = --manifest-path $(SRCS_PATH)/Cargo.toml
-CARGO_BUILD = cargo build $(MANIFEST_PATH)
-CARGO_RUN = cargo run $(MANIFEST_PATH)
-
-.PHONY: all build re clean fclean down logs \
-	docker-up docker-up-build docker-up-detach docker-up-build-detach \
-	docker-down docker-logs docker-clean docker-clean-volumes docker-re
+.PHONY: all detach down clean fclean re logs test test-all \
+	docker-up docker-up-detach docker-down docker-logs docker-clean docker-clean-volumes
 
 all: docker-up
 
-build: docker-up-build
-
 detach: docker-up-detach
-
-build-detach: docker-up-build-detach
 
 down: docker-down
 
@@ -26,30 +21,29 @@ re: clean all
 
 logs: docker-logs
 
+test:
+	@$(DOCKER_COMPOSE) -f $(TEST_COMPOSE_FILE) up --build $(ABORT_ON_EXIT) eapi
+	@$(DOCKER_COMPOSE) -f $(TEST_COMPOSE_FILE) down
+
+test-all:
+	@$(DOCKER_COMPOSE) -f $(ALL_TEST_COMPOSE_FILE) up --build $(ABORT_ON_EXIT) eapi
+	@$(DOCKER_COMPOSE) -f $(ALL_TEST_COMPOSE_FILE) down
+
 # Docker 
 docker-up:
-	@docker compose up
-
-docker-up-build:
-	@docker compose up --build
+	@$(DOCKER_COMPOSE) up --build $(ABORT_ON_EXIT)
 
 docker-up-detach:
-	@docker compose up --detach
-
-docker-up-build-detach:
-	@docker compose up --build --detach
+	@$(DOCKER_COMPOSE) up --build --detach
 
 docker-down:
-	@docker compose down
+	@$(DOCKER_COMPOSE) down
 
 docker-logs:
-	@docker compose logs -f
+	@$(DOCKER_COMPOSE) logs -f
 
 docker-clean:
-	@docker compose down --rmi all
+	@$(DOCKER_COMPOSE) down --rmi all
 
 docker-clean-volumes:
-	@docker compose down --rmi all -v
-
-docker-re:
-	@docker compose restart
+	@$(DOCKER_COMPOSE) down --rmi all -v

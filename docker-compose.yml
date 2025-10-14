@@ -1,6 +1,9 @@
 services:
   eapi:
-    build: ./api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+
     container_name: eapi
     depends_on:
       - db

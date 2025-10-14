@@ -1,0 +1,13 @@
+services:
+  eapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.tests.all
+    container_name: eapi
+    depends_on:
+      - db
+    env_file: .env
+    networks:
+      - db_network
+    ports:
+      - "${LISTEN:-8080}:${LISTEN:-8080}"

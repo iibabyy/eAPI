@@ -13,7 +13,7 @@ use crate::{
     },
     dtos::orders::{CreateOrderDto, OrderDto, OrderResponseDto},
     error::{ErrorMessage, HttpError},
-    extractors::auth::{Authenticated, RequireAuth},
+    middleware::{Authenticated, RequireAuth},
     models::{Order, Product, User},
     utils::{status::Status, AppState},
 };

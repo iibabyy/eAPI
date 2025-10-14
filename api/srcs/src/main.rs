@@ -1,7 +1,7 @@
 mod database;
 mod dtos;
 mod error;
-mod extractors;
+mod middleware;
 mod models;
 mod routes;
 mod utils;
@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     dotenvy::dotenv().ok();
     env_logger::init();
+
     let config = Config::init();
 
     init_db(&config.database_url).await?;

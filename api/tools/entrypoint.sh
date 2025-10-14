@@ -15,4 +15,5 @@ done
 
 echo "Database ready !"
 
+export DATABASE_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_HOST:$DB_PORT/${POSTGRES_DB:-eapi}"
 exec "$@"

@@ -12,7 +12,7 @@ pub async fn init_db(db_url: &str) -> Result<(), sqlx::Error> {
 
     let pool = PgPool::connect(db_url).await?;
 
-    let migrator = Migrator::new(Path::new("./migrations")).await.unwrap();
+    let migrator = Migrator::new(Path::new("../migrations")).await.unwrap();
     migrator.run(&pool).await?;
 
     Ok(())

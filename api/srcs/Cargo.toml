@@ -3,6 +3,10 @@ name = "eapi"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "eapi"
+path = "src/main.rs"
+
 [dependencies]
 actix-web = "4.9.0"
 actix-session = { version = "0.10.1", features = ["cookie-session", "redis-session"] }

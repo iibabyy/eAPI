@@ -12,7 +12,7 @@ use crate::{
         *,
     },
     error::{ErrorMessage, HttpError},
-    extractors::auth::{Authenticated, RequireAuth},
+    middleware::{Authenticated, RequireAuth},
     utils::{status::Status, AppState},
 };
 use actix_web::{

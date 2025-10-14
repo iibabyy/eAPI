@@ -2,7 +2,7 @@ use crate::{
     database::ProductExtractor,
     dtos::{products::*, *},
     error::{ErrorMessage, HttpError},
-    extractors::auth::{Authenticated, RequireAuth},
+    middleware::{Authenticated, RequireAuth},
     utils::{status::Status, AppState},
 };
 use actix_web::{
@@ -241,7 +241,7 @@ mod tests {
         )
         .await;
 
-        let product = db_client
+        let _ = db_client
             .save_product(
                 "computer",
                 &data.user_id,
@@ -253,6 +253,7 @@ mod tests {
             .unwrap();
 
         let token_id = Uuid::new_v4();
+
         db_client
             .modify_user_last_token_id(Some(&token_id), &data.user_id)
             .await
@@ -270,7 +271,6 @@ mod tests {
             .to_request();
 
         let resp = test::call_service(&app, req).await;
-
         assert_eq!(resp.status(), http::StatusCode::OK);
 
         let body = test::read_body(resp).await;
@@ -279,7 +279,7 @@ mod tests {
             .expect("Failed to deserialize products response from JSON");
 
         assert_eq!(product_list_response.results, 1);
-        assert_eq!(product_list_response.data[0].id, product.id);
+        assert_eq!(product_list_response.data[0].id, data.product_id);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
