@@ -1,9 +1,10 @@
 use chrono::prelude::*;
+use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
 use crate::utils;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, FromRow)]
 pub struct User {
     pub id: Uuid,
     pub name: String,
@@ -16,7 +17,7 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, FromRow)]
 pub struct Product {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -29,7 +30,7 @@ pub struct Product {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, FromRow)]
 pub struct Order {
     pub id: Uuid,
     pub user_id: Uuid,

@@ -32,7 +32,7 @@ impl Config {
 }
 
 fn secret_key() -> String {
-	dotenv!("SECRET_KEY").to_string()
+	env::var("SECRET_KEY").expect("DATABASE_URL need to be set").to_string()
 }
 
 fn jwt_max_age() -> i64 {
@@ -42,7 +42,7 @@ fn jwt_max_age() -> i64 {
 }
 
 fn port() -> u16 {
-	env::var("LISTEN").unwrap_or("8000".to_string()).parse::<u16>().expect(&format!("LISTEN: invalid port"))
+	env::var("LISTEN").unwrap_or("8080".to_string()).parse::<u16>().expect(&format!("LISTEN: invalid port"))
 }
 
 fn redis_url() -> String  {
@@ -57,5 +57,11 @@ fn redis_url() -> String  {
 }
 
 fn database_url() -> String {
-	dotenv!("DATABASE_URL").to_string()
+	let user = env::var("POSTGRES_USER").expect("POSTGRES_USER need to be set");
+	let password = env::var("POSTGRES_PASSWORD").unwrap_or("".to_string());
+	let host = env::var("POSTGRES_HOST").unwrap_or("0.0.0.0".to_string());
+	let port = env::var("POSTGRES_PORT").unwrap_or("5432".to_string()).parse::<u16>().expect("POSTGRES_PORT: invalid value");
+	let db = env::var("POSTGRES_DB").expect("POSTGRES_DB need to be set");
+
+	format!("postgres://{user}:{password}@{host}:{port}/{db}")
 }

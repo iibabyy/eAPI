@@ -10,17 +10,8 @@ A secure web API built with Rust and Actix-web framework, featuring JWT authenti
     - [User Management](#user-management)
     - [Security](#security)
     - [Database Integration](#database-integration)
-  - [Technology Stack](#technology-stack)
-  - [Setup and Configuration](#setup-and-configuration)
-    - [Environment Variables](#environment-variables)
-    - [Running the Application](#running-the-application)
-  - [API Endpoints](#api-endpoints)
-    - [Authentication](#authentication)
-    - [Protected Routes](#protected-routes)
+  - [Quick Start](#quick-start)
   - [Security Notes](#security-notes)
-  - [Development](#development)
-    - [Running Tests](#running-tests)
-    - [Building for Production](#building-for-production)
 
 ## Features
 
@@ -53,53 +44,21 @@ A secure web API built with Rust and Actix-web framework, featuring JWT authenti
    cd myapi
    ```
 
-2. **Check dependencies**
-   ```
-   make check
-   ```
-
-3. **Build and run the application**:
+2. **Build and run the application**:
    ```
    make
    ```
+   
+   > **Note**: If you want to run it in the background, you can use:
+   >
+   > ```bash
+   > make detach
+   > ```
 
-4. **Clean application cache**:
+3. **Clean application cache**:
    ```
    make fclean
    ```
-
-## API Endpoints
-
-### Authentication
-
-- **POST /auth/register**: Register a new user
-  ```json
-  {
-    "name": "User Name",
-    "email": "user@example.com",
-    "password": "password",
-    "password_confirm": "password"
-  }
-  ```
-
-- **POST /auth/login**: Login with existing credentials
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password"
-  }
-  ```
-
-- **POST /auth/logout**: Logout and invalidate current token
-
-- **POST /auth/refresh**: Refresh authentication token
-
-### Protected Routes
-
-All protected routes require a valid JWT token in the Authorization header:
-```
-Authorization: Bearer your_jwt_token
-```
 
 ## Security Notes
 
@@ -107,15 +66,3 @@ Authorization: Bearer your_jwt_token
 - Passwords are securely hashed using BCrypt
 - The API tracks the last active token ID to prevent token reuse after logout
 - Token validation includes expiration checks
-
-## Development
-
-### Running Tests
-```
-make test
-```
-
-### Building for Production
-```
-make release
-```

@@ -34,15 +34,14 @@ impl UserExtractor for DBClient {
 		&self,
 		user_id: &Uuid,
 	) -> Result<Option<User>, sqlx::Error> {
-		let user: Option<User> = sqlx::query_as!(
-			User,
+		let user: Option<User> = sqlx::query_as::<_, User>(
 			r#"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE id = $1
-			"#,
-			user_id,
+			"#
 		)
+		.bind(user_id)
 		.fetch_optional(&self.pool)
 		.await?;
 
@@ -53,15 +52,14 @@ impl UserExtractor for DBClient {
 		&self,
 		email: String,
 	) -> Result<Option<User>, sqlx::Error> {
-		let user: Option<User> = sqlx::query_as!(
-			User,
+		let user: Option<User> = sqlx::query_as::<_, User>(
 			r#"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE email = $1
-			"#,
-			email,
+			"#
 		)
+		.bind(email)
 		.fetch_optional(&self.pool)
 		.await?;
 
@@ -76,19 +74,18 @@ impl UserExtractor for DBClient {
 	) -> Result<Vec<User>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 	
-		let users: Vec<User> = sqlx::query_as!(
-			User,
+		let users: Vec<User> = sqlx::query_as::<_, User>(
 			r#"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE name = $1
 			LIMIT $2
 			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
+			"#
 		)
+		.bind(name)
+		.bind(limit as i64)
+		.bind(offset as i64)
 		.fetch_all(&self.pool)
 		.await?;
 
@@ -102,17 +99,16 @@ impl UserExtractor for DBClient {
 	) -> Result<Vec<User>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let users: Vec<User> = sqlx::query_as!(
-			User,
+		let users: Vec<User> = sqlx::query_as::<_, User>(
 			r#"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			LIMIT $1
 			OFFSET $2
-			"#,
-			limit as i64,
-			offset as i64,
+			"#
 		)
+		.bind(limit as i64)
+		.bind(offset as i64)
 		.fetch_all(&self.pool)
 		.await?;
 
@@ -127,19 +123,18 @@ impl UserExtractor for DBClient {
 	) -> Result<Vec<User>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let users: Vec<User> = sqlx::query_as!(
-			User,
+		let users: Vec<User> = sqlx::query_as::<_, User>(
 			r#"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE starts_with(name, $1)
 			LIMIT $2
 			OFFSET $3
-			"#,
-			name,
-			limit as i64,
-			offset as i64,
+			"#
 		)
+		.bind(name)
+		.bind(limit as i64)
+		.bind(offset as i64)
 		.fetch_all(&self.pool)
 		.await?;
 
@@ -152,17 +147,16 @@ impl UserExtractor for DBClient {
 		email: T,
 		password: T,
 	) -> Result<User, sqlx::Error> {
-		let user = sqlx::query_as!(
-			User,
+		let user = sqlx::query_as::<_, User>(
 			r#"
 			INSERT INTO users ( name, email, password )
 			VALUES ( $1, $2, $3 )
 			RETURNING id, name, email, password, sold_in_cents, last_token_id, updated_at, created_at
-			"#,
-			name.into(),
-			email.into(),
-			password.into(),
+			"#
 		)
+		.bind(name.into())
+		.bind(email.into())
+		.bind(password.into())
 		.fetch_one(&self.pool)
 		.await?;
 
@@ -173,13 +167,13 @@ impl UserExtractor for DBClient {
 		&self,
 		user_id: &Uuid,
 	) -> Result<(), sqlx::Error> {
-		let result = sqlx::query!(
+		let result = sqlx::query(
 			r#"
 			DELETE FROM users
 			WHERE id = $1
-			"#,
-			user_id,
+			"#
 		)
+		.bind(user_id)
 		.execute(self.pool())
 		.await?;
 
@@ -209,15 +203,15 @@ impl UserModifier for DBClient {
 			}
 			else { None };
 
-		sqlx::query!(
+		sqlx::query(
 			r#"
 			UPDATE users
 			SET last_token_id = $1
 			WHERE id = $2
-			"#,
-			value,
-			user_id,
+			"#
 		)
+		.bind(value)
+		.bind(user_id)
 		.execute(self.pool())
 		.await?;
 
@@ -232,15 +226,14 @@ impl ProductExtractor for DBClient {
 		&self,
 		product_id: &Uuid,
 	) -> Result<Option<Product>, sqlx::Error> {
-		let product: Option<Product> = sqlx::query_as!(
-			Product,
+		let product: Option<Product> = sqlx::query_as::<_, Product>(
 			r#"
 			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE id = $1
-			"#,
-			product_id,
+			"#
 		)
+		.bind(product_id)
 		.fetch_optional(&self.pool)
 		.await?;
 
@@ -255,19 +248,18 @@ impl ProductExtractor for DBClient {
 	) -> Result<Vec<Product>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 	
-		let products: Vec<Product> = sqlx::query_as!(
-			Product,
+		let products: Vec<Product> = sqlx::query_as::<_, Product>(
 			r#"
 			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE user_id = $1
 			LIMIT $2
 			OFFSET $3
-			"#,
-			user_id,
-			limit as i64,
-			offset as i64,
+			"#
 		)
+		.bind(user_id)
+		.bind(limit as i64)
+		.bind(offset as i64)
 		.fetch_all(&self.pool)
 		.await?;
 
@@ -282,19 +274,18 @@ impl ProductExtractor for DBClient {
 	) -> Result<Vec<Product>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 	
-		let products: Vec<Product> = sqlx::query_as!(
-				Product,
+		let products: Vec<Product> = sqlx::query_as::<_, Product>(
 				r#"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE name = $1
 				LIMIT $2
 				OFFSET $3
-				"#,
-				name,
-				limit as i64,
-				offset as i64,
+				"#
 			)
+			.bind(name)
+			.bind(limit as i64)
+			.bind(offset as i64)
 			.fetch_all(&self.pool)
 			.await?;
 
@@ -308,17 +299,16 @@ impl ProductExtractor for DBClient {
 	) -> Result<Vec<Product>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let products: Vec<Product> = sqlx::query_as!(
-				Product,
+		let products: Vec<Product> = sqlx::query_as::<_, Product>(
 				r#"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				LIMIT $1
 				OFFSET $2
-				"#,
-				limit as i64,
-				offset as i64,
+				"#
 			)
+			.bind(limit as i64)
+			.bind(offset as i64)
 			.fetch_all(&self.pool)
 			.await?;
 
@@ -333,19 +323,18 @@ impl ProductExtractor for DBClient {
 	) -> Result<Vec<Product>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let products: Vec<Product> = sqlx::query_as!(
-				Product,
+		let products: Vec<Product> = sqlx::query_as::<_, Product>(
 				r#"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE starts_with(name, $1)
 				LIMIT $2
 				OFFSET $3
-				"#,
-				name,
-				limit as i64,
-				offset as i64,
+				"#
 			)
+			.bind(name)
+			.bind(limit as i64)
+			.bind(offset as i64)
 			.fetch_all(&self.pool)
 			.await?;
 
@@ -360,19 +349,18 @@ impl ProductExtractor for DBClient {
 		price_in_cents: i64,
 		number_in_stock: i32,
 	) -> Result<Product, sqlx::Error> {
-		let product = sqlx::query_as!(
-				Product,
+		let product = sqlx::query_as::<_, Product>(
 				r#"
 				INSERT INTO products ( name, user_id, description, price_in_cents, number_in_stock )
 				VALUES ( $1, $2, $3, $4, $5 )
 				RETURNING id, name, user_id, description, price_in_cents, number_in_stock, updated_at, created_at
-				"#,
-				name.into(),
-				user_id,
-				description,
-				price_in_cents,
-				number_in_stock,
+				"#
 			)
+			.bind(name.into())
+			.bind(user_id)
+			.bind(description)
+			.bind(price_in_cents)
+			.bind(number_in_stock)
 			.fetch_one(&self.pool)
 			.await?;
 
@@ -383,13 +371,13 @@ impl ProductExtractor for DBClient {
 		&self,
 		user_id: &Uuid,
 	) -> Result<(), sqlx::Error> {
-		let result = sqlx::query!(
+		let result = sqlx::query(
 			r#"
 			DELETE FROM products
 			WHERE id = $1
-			"#,
-			user_id,
+			"#
 		)
+		.bind(user_id)
 		.execute(&self.pool)
 		.await?;
 
@@ -408,15 +396,14 @@ impl OrderExtractor for DBClient {
 		&self,
 		order_id: &Uuid,
 	) -> Result<Option<Order>, sqlx::Error> {
-		let order = sqlx::query_as!(
-				Order,
+		let order = sqlx::query_as::<_, Order>(
 				r#"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE id = $1
-				"#,
-				order_id,
+				"#
 			)
+			.bind(order_id)
 			.fetch_optional(self.pool())
 			.await?;
 		
@@ -452,8 +439,7 @@ impl OrderExtractor for DBClient {
 	) -> Result<Vec<Order>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let orders = sqlx::query_as!(
-				Order,
+		let orders = sqlx::query_as::<_, Order>(
 				r#"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
@@ -473,18 +459,17 @@ impl OrderExtractor for DBClient {
 		products_number: i32,
 	) -> Result<Order, sqlx::Error> {
 		
-		let order = sqlx::query_as!(
-				Order,
+		let order = sqlx::query_as::<_, Order>(
 				r#"
 				INSERT INTO orders( user_id, product_id, order_details_id, products_number )
 				VALUES ( $1, $2, $3, $4 )
 				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at, products_number
-				"#,
-				user_id,
-				product_id,
-				order_details_id,
-				products_number,
+				"#
 			)
+			.bind(user_id)
+			.bind(product_id)
+			.bind(order_details_id)
+			.bind(products_number)
 			.fetch_one(self.pool())
 			.await?;
 
@@ -496,13 +481,13 @@ impl OrderExtractor for DBClient {
 		order_id: &Uuid,
 	) -> Result<(), sqlx::Error> {
 
-		let result = sqlx::query!(
+		let result = sqlx::query(
 			r#"
 			DELETE FROM orders
 			WHERE id = $1
-			"#,
-			order_id,
+			"#
 		)
+		.bind(order_id)
 		.execute(self.pool())
 		.await?;
 
@@ -521,15 +506,14 @@ impl OrderExtractor for DBClient {
 	) -> Result<Vec<Order>, sqlx::Error> {
 		let offset = (page - 1) * limit as u32;
 
-		let orders = sqlx::query_as!(
-				Order,
+		let orders = sqlx::query_as::<_, Order>(
 				r#"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE user_id = $1
-				"#,
-				user_id,
+				"#
 			)
+			.bind(user_id)
 			.fetch_all(self.pool())
 			.await?;
 

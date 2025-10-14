@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{error::HttpError, models::{Order, Product, User}};
 
 pub mod psql;
+pub mod init;
 pub mod transaction;
 
 #[async_trait]

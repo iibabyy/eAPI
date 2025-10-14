@@ -80,15 +80,15 @@ impl ITransaction for DBTransaction<'_> {
 		mut self,
 		user_id: &Uuid,
 	) -> Result<Self, Self::Error> {
-		let _ = sqlx::query!(
+		let _ = sqlx::query(
 			r#"
 			SELECT
 			FROM users
 			WHERE id = $1
 			FOR UPDATE
-			"#,
-			user_id,
+			"#
 		)
+		.bind(user_id)
 		.execute(self.deref_mut())
 		.await?;
 
@@ -100,15 +100,15 @@ impl ITransaction for DBTransaction<'_> {
 		user_id: &Uuid,
 		to_decrease: i64,
 	) -> Result<Self, Self::Error> {
-			let _ = sqlx::query!(
+			let _ = sqlx::query(
 				r#"
 				UPDATE users
 				SET sold_in_cents = sold_in_cents - $1
 				WHERE id = $2
-				"#,
-				to_decrease,
-				user_id,
+				"#
 			)
+			.bind(to_decrease)
+			.bind(user_id)
 			.execute(self.deref_mut())
 			.await?;
 		
@@ -120,15 +120,15 @@ impl ITransaction for DBTransaction<'_> {
 		user_id: &Uuid,
 		to_increase: i64,
 	) -> Result<Self, Self::Error> {
-			let _ = sqlx::query!(
+			let _ = sqlx::query(
 				r#"
 				UPDATE users
 				SET sold_in_cents = sold_in_cents + $1
 				WHERE id = $2
-				"#,
-				to_increase,
-				user_id,
+				"#
 			)
+			.bind(to_increase)
+			.bind(user_id)
 			.execute(self.deref_mut())
 			.await?;
 		
@@ -140,15 +140,15 @@ impl ITransaction for DBTransaction<'_> {
 		product_id: &Uuid,
 	) -> Result<Self, Self::Error> {
 
-			let _ = sqlx::query!(
+			let _ = sqlx::query(
 				r#"
 				SELECT
 				FROM products
 				WHERE id = $1
 				FOR UPDATE
-				"#,
-				product_id,
+				"#
 			)
+			.bind(product_id)
 			.execute(self.deref_mut())
 			.await?;
 	
@@ -161,15 +161,15 @@ impl ITransaction for DBTransaction<'_> {
 		to_decrease: i32,
 	) -> Result<Self, Self::Error> {
 		
-			sqlx::query!(
+			sqlx::query(
 				r#"
 				UPDATE products
 				SET number_in_stock = number_in_stock - $1
 				WHERE id = $2
-				"#,
-				to_decrease,
-				product_id,
+				"#
 			)
+			.bind(to_decrease)
+			.bind(product_id)
 			.execute(self.deref_mut())
 			.await?;
 	
@@ -182,15 +182,15 @@ impl ITransaction for DBTransaction<'_> {
 		to_increase: i32,
 	) -> Result<Self, Self::Error> {
 		
-			sqlx::query!(
+			sqlx::query(
 				r#"
 				UPDATE products
 				SET number_in_stock = number_in_stock + $1
 				WHERE id = $2
-				"#,
-				to_increase,
-				product_id,
+				"#
 			)
+			.bind(to_increase)
+			.bind(product_id)
 			.execute(self.deref_mut())
 			.await?;
 	
@@ -206,15 +206,15 @@ impl ITransaction for DBTransaction<'_> {
 			.map_err(|_| sqlx::Error::WorkerCrashed)?;	// no the real error
 
 
-		sqlx::query!(
+		sqlx::query(
 			r#"
 			UPDATE users
 			SET last_token_id = $1
 			WHERE id = $2
-			"#,
-			hashed_id,
-			user_id,
+			"#
 		)
+		.bind(hashed_id)
+		.bind(user_id)
 		.execute(self.deref_mut())
 		.await?;
 

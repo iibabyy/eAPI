@@ -1,39 +1,22 @@
 services:
-  # api:
-  #   build: ./backend
-  #   container_name: api
-  #   depends_on:
-  #     - db
-  #     - redis
-  #   env_file: .env
-  #   networks:
-  #     - app_network
-  #     - db_network
-  #   # ports:
-  #   #   - 8080:80
-  #   volumes:
-  #     - api_srcs:/app
-  #     - api_migrations:/var/lib/migrations
-
-  # redis:
-  #   image: redis
-  #   container_name: redis
-  #   expose:
-  #     - 6379
-  #   networks:
-  #     - db_network
-  #   ports:
-  #     - 6370:6379
+  eapi:
+    build: ./api
+    container_name: eapi
+    depends_on:
+      - db
+    env_file: .env
+    networks:
+      - db_network
+    ports:
+      - "${LISTEN:-8080}:${LISTEN:-8080}"
 
   db:
     image: postgres:15
     container_name: db
     environment:
-      - POSTGRES_DB=myapp
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-    ports:
-      - 5432:5432
+      - "POSTGRES_DB=${POSTGRES_DB:-eapi}"
+      - "POSTGRES_USER=${POSTGRES_USER}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
     volumes:
       - database:/var/lib/postgresql/data
     networks:
@@ -42,12 +25,8 @@ services:
 ##    NETWORKS    ##
 
 networks:
-  app_network:
-    driver: bridge
-
   db_network:
     driver: bridge
-
 
 ##    VOLUMES    ##
 
@@ -58,17 +37,3 @@ volumes:
     #   type: 'none'
     #   o: 'bind'
     #   device: /lib/myapp/data
-
-  api_srcs:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: ./src
-
-  api_migrations:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: ./migrations

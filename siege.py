@@ -9,7 +9,7 @@ HEADERS = {"Content-Type": "application/json"}
 
 def data(i):
     data = {
-        "name": "ibaby",
+        "name": f"{i}",
         "email": f"{i}@gmail.com",
         "password": "password",
         "passwordConfirm": "password"

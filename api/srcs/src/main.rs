@@ -1,7 +1,3 @@
-#![allow(unused)]
-
-const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
-
 mod routes;
 mod utils;
 mod extractors;
@@ -13,9 +9,12 @@ mod error;
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use colored::Colorize;
-use database::psql::DBClient;
+use database::{psql::DBClient, init::init_db};
 use sqlx::postgres::PgPoolOptions;
 use utils::{AppState, config::Config};
+
+#[cfg(test)]
+const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../migrations");
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,9 +22,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::env::set_var("RUST_LOG", "actix_web=info");
     }
 
-    dotenvy::dotenv()?;
+    dotenvy::dotenv().ok();
     env_logger::init();
     let config = Config::init();
+
+    init_db(&config.database_url).await?;
 
     // creating db connection pool
     let db_client = DBClient::new(
@@ -43,22 +44,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     eprintln!(
         "{}{}",
-        "Server listening on port 127.0.0.1:".bright_black(),
+        "Server listening on port 0.0.0.0:".bright_black(),
         port.to_string().bright_black(),
     );
 
     HttpServer::new(move || {
+        let app_data = web::Data::new( AppState {
+            db_client: db_client.clone(),
+            // redis: redis_pool.clone(),
+            env: config.clone(),
+        });
+
         let cors = Cors::default()
             .allow_any_header()
             .allow_any_method()
             .allow_any_origin();
 
         App::new()
-            .app_data(web::Data::new( AppState {
-                db_client: db_client.clone(),
-                // redis: redis_pool.clone(),
-                env: config.clone(),
-            }))
+            .app_data(app_data)
             .configure(routes::config)
             .wrap(Logger::new("%a %r %s"))
             .wrap(cors)
