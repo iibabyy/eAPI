@@ -9,12 +9,11 @@ RUN apt-get update && \
 
 # Cache dependencies
 COPY ./Cargo.toml ./tools/dummy.rs ./
-RUN sed -i 's#src/main.rs#dummy.rs#' Cargo.toml && \
-    cargo check && \
+RUN sed -i 's#src/main.rs#dummy.rs#' Cargo.toml
+RUN cargo check && \
     cargo build && \
-    cargo test --no-run && \
-    sed -i 's#dummy.rs#src/main.rs#' Cargo.toml && \
-    rm ./dummy.rs
+    cargo test --no-run
+RUN sed -i 's#dummy.rs#src/main.rs#' Cargo.toml && rm ./dummy.rs
 
 COPY . .
 RUN chmod +x ./tools/entrypoint.sh

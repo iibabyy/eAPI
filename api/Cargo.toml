@@ -9,12 +9,21 @@ path = "src/main.rs"
 
 [dependencies]
 actix-web = "4.9.0"
-actix-session = { version = "0.10.1", features = ["cookie-session", "redis-session"] }
+actix-session = { version = "0.10.1", features = [
+	"cookie-session",
+	"redis-session",
+] }
 
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.134"
 
-sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "migrate"] }
+sqlx = { version = "0.8.3", features = [
+	"runtime-tokio-rustls",
+	"postgres",
+	"chrono",
+	"uuid",
+	"migrate",
+] }
 deadpool-postgres = "0.14.1"
 
 # redis = { version = "0.28.2", features = ["tokio-comp"] }
@@ -29,10 +38,13 @@ uuid = { version = "1.4.1", features = ["serde", "v4"] }
 validator = { version = "0.20.0", features = ["derive"] }
 jsonwebtoken = "9.3.0"
 async-trait = "0.1.85"
-chrono = { version = "0.4.39", features = ["serde"]}
+chrono = { version = "0.4.39", features = ["serde"] }
 futures-util = "0.3.31"
 dotenvy = "0.15.7"
 dotenvy_macro = "0.15.7"
 sqlx-core = "0.8.3"
 ring = "0.17.8"
 colored = "3.0.0"
+
+utoipa = { version = "4.2", features = ["actix_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "6.0", features = ["actix-web"] }

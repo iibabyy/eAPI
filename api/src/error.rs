@@ -3,10 +3,11 @@ use std::fmt;
 use actix_web::{HttpResponse, ResponseError};
 use bcrypt::BcryptError;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::utils::status::Status;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ErrorResponse {
     pub status: String,
     pub message: String,
@@ -18,7 +19,7 @@ impl fmt::Display for ErrorResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct Response {
     pub status: Status,
     pub message: String,

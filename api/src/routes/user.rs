@@ -40,6 +40,22 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 /* --- [ ROUTES ] --- */
 /* --- -------------- */
 
+#[utoipa::path(
+    get,
+    path = "/api/users/{user_id}",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User found", body = ForeignUserResponseDto),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 404, description = "User not found", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Users"
+)]
 #[get("/{user_id}", wrap = "RequireAuth")]
 async fn get_by_id(
     id: web::Path<Uuid>,
@@ -60,6 +76,18 @@ async fn get_by_id(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/users/me",
+    responses(
+        (status = 200, description = "Current user information", body = UserResponseDto),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Users"
+)]
 #[get("/me", wrap = "RequireAuth")]
 async fn get_me(user: Authenticated) -> Result<HttpResponse, HttpError> {
     let filtered_user = FilterUserDto::filter_user(&user);
@@ -72,6 +100,22 @@ async fn get_me(user: Authenticated) -> Result<HttpResponse, HttpError> {
     Ok(HttpResponse::Ok().json(response_data))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/users/me/sold",
+    params(
+        ("sold_to_add" = i64, Query, description = "Amount to add to user's balance in cents")
+    ),
+    responses(
+        (status = 204, description = "Balance updated successfully"),
+        (status = 400, description = "Invalid request data", body = Response),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Users"
+)]
 #[post("/me/sold", wrap = "RequireAuth")]
 async fn add_sold(
     user: Authenticated,
@@ -95,6 +139,18 @@ async fn add_sold(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/users/me",
+    responses(
+        (status = 204, description = "User deleted successfully"),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Users"
+)]
 #[delete("/me", wrap = "RequireAuth")]
 async fn delete(user: Authenticated, data: web::Data<AppState>) -> Result<HttpResponse, HttpError> {
     data.db_client
@@ -105,6 +161,22 @@ async fn delete(user: Authenticated, data: web::Data<AppState>) -> Result<HttpRe
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/users",
+    params(
+        ("page" = Option<usize>, Query, description = "Page number for pagination"),
+        ("limit" = Option<usize>, Query, description = "Number of items per page")
+    ),
+    responses(
+        (status = 200, description = "Users retrieved successfully", body = UserListResponseDto),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Users"
+)]
 #[get("", wrap = "RequireAuth")]
 async fn get_all(
     data: web::Data<AppState>,
@@ -133,13 +205,29 @@ async fn get_all(
     }))
 }
 
-mod products {
+pub mod products {
     use super::*;
 
     pub(super) fn config(config: &mut web::ServiceConfig) {
         config.service(get_my_products).service(get_user_products);
     }
 
+    #[utoipa::path(
+        get,
+        path = "/api/users/me/products",
+        params(
+            ("page" = Option<usize>, Query, description = "Page number for pagination"),
+            ("limit" = Option<usize>, Query, description = "Number of items per page")
+        ),
+        responses(
+            (status = 200, description = "User's products retrieved successfully", body = ProductListResponseDto),
+            (status = 401, description = "Unauthorized", body = Response)
+        ),
+        security(
+            ("bearer_auth" = [])
+        ),
+        tag = "Users"
+    )]
     #[get("/me/products", wrap = "RequireAuth")]
     async fn get_my_products(
         user: Authenticated,
@@ -165,6 +253,24 @@ mod products {
         }))
     }
 
+    #[utoipa::path(
+        get,
+        path = "/api/users/{user_id}/products",
+        params(
+            ("user_id" = Uuid, Path, description = "User ID"),
+            ("page" = Option<usize>, Query, description = "Page number for pagination"),
+            ("limit" = Option<usize>, Query, description = "Number of items per page")
+        ),
+        responses(
+            (status = 200, description = "User's products retrieved successfully", body = FilterProductListResponseDto),
+            (status = 401, description = "Unauthorized", body = Response),
+            (status = 404, description = "User not found", body = Response)
+        ),
+        security(
+            ("bearer_auth" = [])
+        ),
+        tag = "Users"
+    )]
     #[get("/{user_id}/products", wrap = "RequireAuth")]
     async fn get_user_products(
         user_id: Path<Uuid>,
@@ -205,6 +311,22 @@ pub mod orders {
         config.service(get_my_orders);
     }
 
+    #[utoipa::path(
+        get,
+        path = "/api/users/me/orders",
+        params(
+            ("page" = Option<usize>, Query, description = "Page number for pagination"),
+            ("limit" = Option<usize>, Query, description = "Number of items per page")
+        ),
+        responses(
+            (status = 200, description = "User's orders retrieved successfully", body = OrderListResponseDto),
+            (status = 401, description = "Unauthorized", body = Response)
+        ),
+        security(
+            ("bearer_auth" = [])
+        ),
+        tag = "Users"
+    )]
     #[get("/me/orders", wrap = "RequireAuth")]
     async fn get_my_orders(
         user: Authenticated,
@@ -1057,7 +1179,7 @@ mod tests {
     }
 
     #[cfg(test)]
-    mod orders {
+    pub mod orders {
         use super::*;
 
         #[sqlx::test(migrator = "crate::MIGRATOR")]

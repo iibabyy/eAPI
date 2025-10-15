@@ -1,12 +1,11 @@
 ABORT_ON_EXIT = --abort-on-container-exit --exit-code-from eapi
-DOCKER_ENV_FILE = --env-file docker/.docker.env
-DEV_ENV_FILE = --env-file api/.env
+ENV_FILE = --env-file .env
 
 COMPOSE_FILE = docker/docker-compose.yml
-DOCKER_COMPOSE = docker compose $(DOCKER_ENV_FILE) -f $(COMPOSE_FILE)
+DOCKER_COMPOSE = docker compose $(ENV_FILE) -f $(COMPOSE_FILE)
 
 COMPOSE_DEV_FILE = docker/docker-compose-dev.yml
-DOCKER_COMPOSE_DEV = docker compose $(DEV_ENV_FILE) -f $(COMPOSE_DEV_FILE)
+DOCKER_COMPOSE_DEV = docker compose $(ENV_FILE) -f $(COMPOSE_DEV_FILE)
 
 COMPOSE_TEST_FILE = docker/docker-compose-tests.yml
 DOCKER_COMPOSE_TESTS = $(DOCKER_COMPOSE) -f $(COMPOSE_TEST_FILE)
@@ -22,7 +21,7 @@ DATABASE_SERVICE = db
 # ------------------------------
 .PHONY: all detach build down clean fclean re logs dev dev-down test test-all \
     docker-up docker-build docker-up-detach docker-down docker-logs \
-    docker-logs-db docker-logs-all docker-clean docker-clean-volumes
+    docker-logs-db docker-logs-all docker-clean docker-clean-with-volumes
 
 # ------------------------------
 # MAIN TARGETS
@@ -32,7 +31,7 @@ detach: docker-up-detach
 build: docker-build
 down: docker-down
 clean: docker-clean
-fclean: docker-clean-volumes
+fclean: docker-clean-with-volumes
 re: clean all
 logs: docker-logs
 
@@ -85,7 +84,7 @@ docker-clean:
 	@$(DOCKER_COMPOSE_TESTS) down --remove-orphans --rmi all
 	@$(DOCKER_COMPOSE_ALL_TESTS) down --remove-orphans --rmi all
 
-docker-clean-volumes:
+docker-clean-with-volumes:
 	@$(DOCKER_COMPOSE) down --remove-orphans --rmi all -v
 	@$(DOCKER_COMPOSE_TESTS) down --remove-orphans --rmi all -v
 	@$(DOCKER_COMPOSE_ALL_TESTS) down --remove-orphans --rmi all -v

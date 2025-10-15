@@ -6,8 +6,9 @@ services:
     container_name: eapi
     depends_on:
       - db
-    env_file: ../docker/.docker.env
+    env_file: ../.env
+    tty: true
+    environment:
+      - POSTGRES_HOST=db
     networks:
       - db_network
-    ports:
-      - "${LISTEN:-8080}:${LISTEN:-8080}"

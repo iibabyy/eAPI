@@ -1,14 +1,11 @@
-mod auth;
-mod orders;
-mod products;
-mod root;
-mod user;
+pub mod auth;
+pub mod orders;
+pub mod products;
+pub mod user;
 
 use actix_web::web;
 
 pub fn config(config: &mut web::ServiceConfig) {
-    config.service(root::root);
-
     config.service(
         web::scope("/api")
             .configure(user::config)

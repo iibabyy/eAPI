@@ -32,6 +32,22 @@ pub fn config(config: &mut web::ServiceConfig) {
 /* --- [ ROUTES ] --- */
 /* ------------------ */
 
+#[utoipa::path(
+    get,
+    path = "/api/orders/{order_id}",
+    params(
+        ("order_id" = Uuid, Path, description = "Order ID")
+    ),
+    responses(
+        (status = 200, description = "Order found", body = OrderResponseDto),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 404, description = "Order not found", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Orders"
+)]
 #[get("/{order_id}", wrap = "RequireAuth")]
 async fn get_by_id(
     user: Authenticated,
@@ -73,7 +89,25 @@ fn check_order(user: &User, product: &Product, order: &Order) -> Result<(), Http
     Ok(())
 }
 
-// TODO!: Add tests for this endpoint
+#[utoipa::path(
+    post,
+    path = "/api/orders/{order_id}/validate",
+    params(
+        ("order_id" = Uuid, Path, description = "Order ID")
+    ),
+    responses(
+        (status = 204, description = "Order validated and processed successfully"),
+        (status = 400, description = "Invalid order (auto-buying, insufficient funds, etc.)", body = Response),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 402, description = "Payment required (insufficient balance)", body = Response),
+        (status = 404, description = "Order not found", body = Response),
+        (status = 409, description = "Product out of stock", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Orders"
+)]
 #[post("/{order_id}/validate", wrap = "RequireAuth")]
 async fn validate(
     user: Authenticated,
@@ -119,6 +153,20 @@ async fn validate(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/orders",
+    request_body = CreateOrderDto,
+    responses(
+        (status = 200, description = "Order created successfully", body = OrderResponseDto),
+        (status = 400, description = "Invalid request data", body = Response),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Orders"
+)]
 #[post("", wrap = "RequireAuth")]
 async fn create(
     user: Authenticated,
@@ -146,6 +194,22 @@ async fn create(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/orders/{order_id}",
+    params(
+        ("order_id" = Uuid, Path, description = "Order ID")
+    ),
+    responses(
+        (status = 204, description = "Order deleted successfully"),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 404, description = "Order not found", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Orders"
+)]
 #[delete("/{order_id}", wrap = "RequireAuth")]
 async fn delete(
     user: Authenticated,

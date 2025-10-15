@@ -4,9 +4,10 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::Validate;
 
-#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterUserDto {
     #[validate(length(min = 1, message = "Name is required"))]
@@ -16,29 +17,34 @@ pub struct RegisterUserDto {
         length(min = 1, message = "Email is required"),
         email(message = "Email is invalid")
     )]
+    #[schema(example = "user@example.com")]
     pub email: String,
 
     #[validate(custom(function = "validate_password"))]
+    #[schema(example = "password123")]
     pub password: String,
 
     #[validate(custom(function = "validate_password"))]
+    #[schema(example = "password123")]
     pub password_confirm: String,
 }
 
-#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginUserDto {
     #[validate(
         length(min = 1, message = "Email is required"),
         email(message = "Email is invalid")
     )]
+    #[schema(example = "user@example.com")]
     pub email: String,
 
     #[validate(custom(function = "validate_password"))]
+    #[schema(example = "password123")]
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterForeignUserDto {
     pub name: String,
@@ -67,7 +73,7 @@ impl FilterForeignUserDto {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterUserDto {
     pub id: String,
@@ -92,36 +98,37 @@ impl FilterUserDto {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UserResponseDto {
     pub status: Status,
     pub data: FilterUserDto,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ForeignUserResponseDto {
     pub status: Status,
     pub data: FilterForeignUserDto,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UserListResponseDto {
     pub status: Status,
     pub data: Vec<FilterForeignUserDto>,
     pub results: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct LoginResponseDto {
     pub status: Status,
     pub data: FilterUserDto,
     pub token: String,
 }
 
-#[derive(Validate, Debug, Serialize, Deserialize)]
+#[derive(Validate, Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AddSoldDto {
     // 1m cents -> 10k dollars
     #[validate(range(min = 1, max = 1_000_000, message = "Invalid field soldToAdd"))]
+    #[schema(example = 10000)]
     pub sold_to_add: i64,
 }

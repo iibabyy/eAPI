@@ -1,26 +1,33 @@
 use crate::{utils::models::Product, utils::status::Status};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
-#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProductDto {
     #[validate(length(min = 1, message = "Name is required"))]
+    #[schema(example = "Smartphone")]
     pub name: String,
 
+    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
     pub user_id: Uuid,
+
+    #[schema(example = "A high-quality smartphone")]
     pub description: Option<String>,
 
     #[validate(range(min = 1, max = 9999, message = "Invalid number in stock"))]
+    #[schema(example = 10)]
     pub number_in_stock: i32,
 
     #[validate(range(min = 0, message = "Prices can not be negative"))]
+    #[schema(example = 25000)]
     pub price_in_cents: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductDto {
     pub id: uuid::Uuid,
@@ -56,7 +63,7 @@ impl ProductDto {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FilterProductDto {
     pub id: uuid::Uuid,
@@ -84,26 +91,26 @@ impl FilterProductDto {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ProductResponseDto {
     pub status: Status,
     pub data: ProductDto,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct FilterProductResponseDto {
     pub status: Status,
     pub data: FilterProductDto,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ProductListResponseDto {
     pub status: Status,
     pub data: Vec<ProductDto>,
     pub results: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct FilterProductListResponseDto {
     pub status: Status,
     pub data: Vec<FilterProductDto>,

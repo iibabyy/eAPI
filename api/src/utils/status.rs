@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::ValidationError;
 
-#[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum Status {
     Success,

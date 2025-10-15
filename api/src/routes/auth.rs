@@ -33,6 +33,17 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
     );
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/login",
+    request_body = LoginUserDto,
+    responses(
+        (status = 200, description = "Login successful", body = LoginResponseDto),
+        (status = 400, description = "Invalid request data", body = Response),
+        (status = 401, description = "Invalid credentials", body = Response)
+    ),
+    tag = "Authentication"
+)]
 #[post("/login")]
 async fn login(
     infos: Json<LoginUserDto>,
@@ -105,6 +116,17 @@ async fn login(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/register",
+    request_body = RegisterUserDto,
+    responses(
+        (status = 201, description = "User registered successfully", body = UserResponseDto),
+        (status = 400, description = "Invalid request data", body = Response),
+        (status = 409, description = "Email already exists", body = Response)
+    ),
+    tag = "Authentication"
+)]
 #[post("/register")]
 async fn register(
     infos: Json<RegisterUserDto>,
@@ -147,6 +169,14 @@ async fn register(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    responses(
+        (status = 200, description = "Logout successful", body = Response)
+    ),
+    tag = "Authentication"
+)]
 #[post("/logout")]
 async fn logout() -> HttpResponse {
     let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.clone(), "")
@@ -162,6 +192,15 @@ async fn logout() -> HttpResponse {
         .json(json!({"status": Status::Success}))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/refresh",
+    responses(
+        (status = 200, description = "Token refreshed successfully", body = Response),
+        (status = 401, description = "Invalid or expired refresh token", body = Response)
+    ),
+    tag = "Authentication"
+)]
 #[post("/refresh")]
 async fn refresh(
     request: HttpRequest,

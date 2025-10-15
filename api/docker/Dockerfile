@@ -6,14 +6,13 @@ WORKDIR /usr/src/eapi
 
 # Cache dependencies
 COPY ./Cargo.toml ./tools/dummy.rs ./
-RUN sed -i 's#src/main.rs#dummy.rs#' Cargo.toml && \
-    cargo build && \
-    sed -i 's#dummy.rs#src/main.rs#' Cargo.toml && \
-    rm ./dummy.rs
+RUN sed -i 's#src/main.rs#dummy.rs#' Cargo.toml
+RUN cargo build --release
+RUN sed -i 's#dummy.rs#src/main.rs#' Cargo.toml && rm ./dummy.rs
 
 COPY . .
 
-RUN cargo build
+RUN cargo build --release
 
 # -----------------------------
 # FINAL IMAGE
@@ -25,12 +24,14 @@ RUN apt-get update && \
     apt-get install -y postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./migrations .
-COPY ./tools .
+COPY ./migrations ./migrations
+COPY ./tools ./tools
 
 RUN chmod +x ./tools/entrypoint.sh
 
-COPY --from=builder /usr/src/eapi/target/debug/eapi /usr/local/bin/eapi
+COPY --from=builder /usr/src/eapi/target/release/eapi /usr/local/bin/eapi
+
+EXPOSE 8080
 
 ENTRYPOINT ["./tools/entrypoint.sh"]
 CMD ["eapi"]

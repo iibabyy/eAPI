@@ -1,4 +1,5 @@
 mod database;
+mod docs;
 mod dtos;
 mod error;
 mod middleware;
@@ -6,18 +7,20 @@ mod routes;
 mod utils;
 
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, web, App, HttpServer};
-use colored::Colorize;
+use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
 use database::{init::init_database, psql::DBClient};
+use docs::ApiDoc;
 use sqlx::postgres::PgPoolOptions;
 use utils::{config::Config, AppState};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "actix_web=info");
+        std::env::set_var("RUST_LOG", "info");
     }
 
     dotenvy::dotenv().ok();
@@ -41,12 +44,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let port = config.port;
 
-    eprintln!(
-        "{}{}",
-        "Server listening on port 0.0.0.0:".bright_black(),
-        port.to_string().bright_black(),
-    );
-
     HttpServer::new(move || {
         let app_data = web::Data::new(AppState {
             db_client: db_client.clone(),
@@ -59,9 +56,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .allow_any_method()
             .allow_any_origin();
 
+        let redirect_to_docs = async || -> Result<HttpResponse> {
+            Ok(HttpResponse::Found()
+                .append_header(("Location", "/docs/"))
+                .finish())
+        };
+
         App::new()
             .app_data(app_data)
             .configure(routes::config)
+            .service(
+                SwaggerUi::new("/docs/{_:.*}")
+                    .url("/docs/openapi.json", ApiDoc::openapi())
+                    .config(
+                        utoipa_swagger_ui::Config::from("/docs/openapi.json")
+                            .filter(true)
+                            .default_models_expand_depth(10), // .default_model_expand_depth(10),
+                    ),
+            )
+            .service(web::resource("/").route(web::get().to(redirect_to_docs)))
+            .service(web::resource("/docs").route(web::get().to(redirect_to_docs)))
             .wrap(Logger::new("%a %r %s"))
             .wrap(cors)
         // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))

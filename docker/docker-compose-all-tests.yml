@@ -4,11 +4,12 @@ services:
       context: ../api
       dockerfile: docker/Dockerfile.tests
     container_name: eapi
+    tty: true
     depends_on:
       - db
-    env_file: ../docker/.docker.env
+    env_file: ../.env
+    environment:
+      - POSTGRES_HOST=db
     networks:
       - db_network
-    ports:
-      - "${LISTEN:-8080}:${LISTEN:-8080}"
     command: bash -c "cargo test && echo 'cargo test done!' && cargo clippy && echo 'cargo clippy done!' && cargo fmt --check && echo 'cargo fmt --check done!'"

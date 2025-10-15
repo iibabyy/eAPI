@@ -7,9 +7,12 @@ services:
       context: ../api
       dockerfile: docker/Dockerfile
     container_name: eapi
+    tty: true
     depends_on:
       - db
-    env_file: ../docker/.docker.env
+    env_file: ../.env
+    environment:
+      - POSTGRES_HOST=db
     networks:
       - db_network
     ports:

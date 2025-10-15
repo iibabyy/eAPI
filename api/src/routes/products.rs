@@ -27,6 +27,22 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
 /* ------------ [ ROUTES ] ------------ */
 /* ------------ ---------- ------------ */
 
+#[utoipa::path(
+    get,
+    path = "/api/products/{product_id}",
+    params(
+        ("product_id" = Uuid, Path, description = "Product ID")
+    ),
+    responses(
+        (status = 200, description = "Product found", body = FilterProductResponseDto),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 404, description = "Product not found", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Products"
+)]
 #[get("/{product_id}", wrap = "RequireAuth")]
 async fn get_by_id(
     id: web::Path<Uuid>,
@@ -47,6 +63,23 @@ async fn get_by_id(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/products/{product_id}",
+    params(
+        ("product_id" = Uuid, Path, description = "Product ID")
+    ),
+    responses(
+        (status = 204, description = "Product deleted successfully"),
+        (status = 401, description = "Unauthorized", body = Response),
+        (status = 403, description = "Permission denied", body = Response),
+        (status = 404, description = "Product not found", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Products"
+)]
 #[delete("/{product_id}", wrap = "RequireAuth")]
 async fn delete(
     user: Authenticated,
@@ -76,6 +109,22 @@ async fn delete(
     Ok(HttpResponse::NoContent().finish())
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/products",
+    params(
+        ("page" = Option<usize>, Query, description = "Page number for pagination"),
+        ("limit" = Option<usize>, Query, description = "Number of items per page")
+    ),
+    responses(
+        (status = 200, description = "Products retrieved successfully", body = FilterProductListResponseDto),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Products"
+)]
 #[get("", wrap = "RequireAuth")]
 async fn get_all(
     data: web::Data<AppState>,
@@ -104,6 +153,20 @@ async fn get_all(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/products",
+    request_body = CreateProductDto,
+    responses(
+        (status = 200, description = "Product created successfully", body = ProductResponseDto),
+        (status = 400, description = "Invalid request data", body = Response),
+        (status = 401, description = "Unauthorized", body = Response)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Products"
+)]
 #[post("", wrap = "RequireAuth")]
 async fn create(
     product: Json<CreateProductDto>,
