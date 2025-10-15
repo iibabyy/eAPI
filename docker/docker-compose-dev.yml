@@ -1,0 +1,25 @@
+services:
+  dev-db:
+    image: postgres:15
+    container_name: dev-db
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-eapi}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - database:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+
+# -----------------------
+# VOLUMES
+# -----------------------
+volumes:
+  database: {}
+    # Optional custom driver configuration
+    # driver: local
+    # driver_opts:
+    #   type: 'none'
+    #   o: 'bind'
+    #   device: /lib/myapp/data

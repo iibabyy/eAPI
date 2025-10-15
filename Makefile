@@ -1,49 +1,91 @@
 ABORT_ON_EXIT = --abort-on-container-exit --exit-code-from eapi
-DOCKER_COMPOSE = docker compose -f docker-compose.yml
-TEST_COMPOSE_FILE = docker-compose-tests.yml
-ALL_TEST_COMPOSE_FILE = docker-compose-all-tests.yml
-UP = up --build
+DOCKER_ENV_FILE = --env-file docker/.docker.env
+DEV_ENV_FILE = --env-file api/.env
 
-.PHONY: all detach down clean fclean re logs test test-all \
-	docker-up docker-up-detach docker-down docker-logs docker-clean docker-clean-volumes
+COMPOSE_FILE = docker/docker-compose.yml
+DOCKER_COMPOSE = docker compose $(DOCKER_ENV_FILE) -f $(COMPOSE_FILE)
 
+COMPOSE_DEV_FILE = docker/docker-compose-dev.yml
+DOCKER_COMPOSE_DEV = docker compose $(DEV_ENV_FILE) -f $(COMPOSE_DEV_FILE)
+
+COMPOSE_TEST_FILE = docker/docker-compose-tests.yml
+DOCKER_COMPOSE_TESTS = $(DOCKER_COMPOSE) -f $(COMPOSE_TEST_FILE)
+
+COMPOSE_ALL_TEST_FILE = docker/docker-compose-all-tests.yml
+DOCKER_COMPOSE_ALL_TESTS = $(DOCKER_COMPOSE) -f $(COMPOSE_ALL_TEST_FILE)
+
+API_SERVICE = eapi
+DATABASE_SERVICE = db
+
+# ------------------------------
+# PHONY TARGETS
+# ------------------------------
+.PHONY: all detach build down clean fclean re logs dev dev-down test test-all \
+    docker-up docker-build docker-up-detach docker-down docker-logs \
+    docker-logs-db docker-logs-all docker-clean docker-clean-volumes
+
+# ------------------------------
+# MAIN TARGETS
+# ------------------------------
 all: docker-up
-
 detach: docker-up-detach
-
+build: docker-build
 down: docker-down
-
 clean: docker-clean
-
 fclean: docker-clean-volumes
-
 re: clean all
-
 logs: docker-logs
 
+# ------------------------------
+# DEV TARGETS
+# ------------------------------
+dev:
+	@$(DOCKER_COMPOSE_DEV) up --detach --build
+
+dev-down:
+	@$(DOCKER_COMPOSE_DEV) down --remove-orphans
+
+# ------------------------------
+# TEST TARGETS
+# ------------------------------
 test:
-	@$(DOCKER_COMPOSE) -f $(TEST_COMPOSE_FILE) up --build $(ABORT_ON_EXIT) eapi
-	@$(DOCKER_COMPOSE) -f $(TEST_COMPOSE_FILE) down
+	@$(DOCKER_COMPOSE_TESTS) up $(API_SERVICE) --build $(ABORT_ON_EXIT)
+	@$(DOCKER_COMPOSE_TESTS) down --remove-orphans
 
 test-all:
-	@$(DOCKER_COMPOSE) -f $(ALL_TEST_COMPOSE_FILE) up --build $(ABORT_ON_EXIT) eapi
-	@$(DOCKER_COMPOSE) -f $(ALL_TEST_COMPOSE_FILE) down
+	@$(DOCKER_COMPOSE_ALL_TESTS) up $(API_SERVICE) --build $(ABORT_ON_EXIT)
+	@$(DOCKER_COMPOSE_ALL_TESTS) down --remove-orphans
 
-# Docker 
+# ------------------------------
+# DOCKER TARGETS
+# ------------------------------
 docker-up:
-	@$(DOCKER_COMPOSE) up --build $(ABORT_ON_EXIT)
+	@$(DOCKER_COMPOSE) up $(API_SERVICE) --build $(ABORT_ON_EXIT)
+
+docker-build:
+	@$(DOCKER_COMPOSE) build
 
 docker-up-detach:
 	@$(DOCKER_COMPOSE) up --build --detach
 
 docker-down:
-	@$(DOCKER_COMPOSE) down
+	@$(DOCKER_COMPOSE) down --remove-orphans
 
 docker-logs:
-	@$(DOCKER_COMPOSE) logs -f
+	@$(DOCKER_COMPOSE) logs $(API_SERVICE) -f
+
+docker-logs-db:
+	@$(DOCKER_COMPOSE) logs $(DATABASE_SERVICE) -f || true
+
+docker-logs-all:
+	@$(DOCKER_COMPOSE) logs -f || true
 
 docker-clean:
-	@$(DOCKER_COMPOSE) down --rmi all
+	@$(DOCKER_COMPOSE) down --remove-orphans --rmi all
+	@$(DOCKER_COMPOSE_TESTS) down --remove-orphans --rmi all
+	@$(DOCKER_COMPOSE_ALL_TESTS) down --remove-orphans --rmi all
 
 docker-clean-volumes:
-	@$(DOCKER_COMPOSE) down --rmi all -v
+	@$(DOCKER_COMPOSE) down --remove-orphans --rmi all -v
+	@$(DOCKER_COMPOSE_TESTS) down --remove-orphans --rmi all -v
+	@$(DOCKER_COMPOSE_ALL_TESTS) down --remove-orphans --rmi all -v

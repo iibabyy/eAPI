@@ -1,2 +1,4 @@
-srcs/target/
+target/
 Cargo.lock
+docker
+.env

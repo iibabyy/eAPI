@@ -1,5 +1,5 @@
 use crate::{
-    models::User,
+    utils::models::User,
     utils::status::{validate_password, Status},
 };
 use chrono::{DateTime, Utc};

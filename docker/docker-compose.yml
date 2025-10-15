@@ -1,0 +1,50 @@
+services:
+  # -----------------------
+  # API SERVICE
+  # -----------------------
+  eapi:
+    build:
+      context: ../api
+      dockerfile: docker/Dockerfile
+    container_name: eapi
+    depends_on:
+      - db
+    env_file: ../docker/.docker.env
+    networks:
+      - db_network
+    ports:
+      - "${LISTEN:-8080}:${LISTEN:-8080}"
+
+  # -----------------------
+  # DATABASE SERVICE
+  # -----------------------
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-eapi}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - database:/var/lib/postgresql/data
+    networks:
+      - db_network
+
+# -----------------------
+# NETWORKS
+# -----------------------
+networks:
+  db_network:
+    driver: bridge
+
+# -----------------------
+# VOLUMES
+# -----------------------
+volumes:
+  database:
+    # Optional custom driver configuration
+    # driver: local
+    # driver_opts:
+    #   type: 'none'
+    #   o: 'bind'
+    #   device: /lib/myapp/data

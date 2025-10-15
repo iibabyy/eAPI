@@ -1,4 +1,4 @@
-use crate::{models::Product, utils::status::Status};
+use crate::{utils::models::Product, utils::status::Status};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

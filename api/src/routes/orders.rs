@@ -14,7 +14,7 @@ use crate::{
     dtos::orders::{CreateOrderDto, OrderDto, OrderResponseDto},
     error::{ErrorMessage, HttpError},
     middleware::{Authenticated, RequireAuth},
-    models::{Order, Product, User},
+    utils::models::{Order, Product, User},
     utils::{status::Status, AppState},
 };
 

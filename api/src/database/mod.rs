@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::models::{Order, Product, User};
+use crate::utils::models::{Order, Product, User};
 
 pub mod init;
 pub mod psql;

@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-set -e
-
 # URL example : postgres://user:pass@host:port/db
 DB_HOST=${POSTGRES_HOST:-localhost}
 DB_PORT=${POSTGRES_PORT:-5432}
@@ -16,4 +14,5 @@ done
 echo "Database ready !"
 
 export DATABASE_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_HOST:$DB_PORT/${POSTGRES_DB:-eapi}"
+echo running "$@"
 exec "$@"

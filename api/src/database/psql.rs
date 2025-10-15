@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Order, Product, User};
+use crate::utils::models::{Order, Product, User};
 
 use super::{OrderExtractor, ProductExtractor, UserExtractor, UserModifier, UserUtils};
 

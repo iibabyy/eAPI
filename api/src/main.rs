@@ -2,19 +2,17 @@ mod database;
 mod dtos;
 mod error;
 mod middleware;
-mod models;
 mod routes;
 mod utils;
 
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use colored::Colorize;
-use database::{init::init_db, psql::DBClient};
+use database::{init::init_database, psql::DBClient};
 use sqlx::postgres::PgPoolOptions;
 use utils::{config::Config, AppState};
 
-#[cfg(test)]
-const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../migrations");
+const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = Config::init();
 
-    init_db(&config.database_url).await?;
+    init_database(&config.database_url).await?;
 
     // creating db connection pool
     let db_client = DBClient::new(

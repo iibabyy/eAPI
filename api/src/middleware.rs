@@ -17,8 +17,7 @@ use futures_util::{
 use crate::{
     database::UserExtractor,
     error::{ErrorMessage, ErrorResponse, HttpError},
-    models::User,
-    utils::{self, token::extract_token_from, AppState},
+    utils::{self, models::User, token::extract_token_from, AppState},
 };
 
 // LocalBoxFuture<'static, Result<ServiceResponse<actix_web::body::BoxBody>, actix_web::Error>>

@@ -1,5 +1,6 @@
 pub mod config;
 pub mod constants;
+pub mod models;
 pub mod password;
 pub mod status;
 pub mod test_utils;
