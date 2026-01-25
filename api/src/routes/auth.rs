@@ -11,19 +11,12 @@ use validator::Validate;
 
 use crate::{
     database::{
-        transaction::{DBTransaction, ITransaction},
-        UserExtractor, UserModifier, UserUtils,
-    },
-    dtos::users::{
+        UserExtractor, UserModifier, UserUtils, transaction::{DBTransaction, ITransaction}
+    }, dtos::users::{
         FilterUserDto, LoginResponseDto, LoginUserDto, RegisterUserDto, UserResponseDto,
-    },
-    error::{ErrorMessage, HttpError},
-    utils::{
-        constants, password,
-        status::Status,
-        token::{self, extract_token_from},
-        AppState,
-    },
+    }, error::{ErrorMessage, HttpError}, middleware::{Authenticated, RequireAuth}, utils::{
+        AppState, constants, password, status::Status, token::{self, extract_token_from}
+    }
 };
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
@@ -42,8 +35,9 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
     request_body = LoginUserDto,
     responses(
         (status = 200, description = "Login successful", body = LoginResponseDto),
-        (status = 400, description = "Invalid request data", body = Response),
-        (status = 401, description = "Invalid credentials", body = Response)
+        (status = 400, description = "Invalid request data"),
+        (status = 401, description = "Invalid credentials"),
+        (status = 404, description = "User not found")
     ),
     tag = "Authentication"
 )]
@@ -64,7 +58,7 @@ async fn login(
         .get_user_by_email(infos.email)
         .await
         .map_err(|err| HttpError::server_error(err.to_string()))?
-        .ok_or_else(|| HttpError::unauthorized(ErrorMessage::WrongCredentials))?;
+        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNotFound))?;
 
     // check passwords
     let password_matches = match password::compare(&infos.password, &user.password) {
@@ -125,8 +119,8 @@ async fn login(
     request_body = RegisterUserDto,
     responses(
         (status = 201, description = "User registered successfully", body = UserResponseDto),
-        (status = 400, description = "Invalid request data", body = Response),
-        (status = 409, description = "Email already exists", body = Response)
+        (status = 400, description = "Invalid request data"),
+        (status = 409, description = "Email already exists")
     ),
     tag = "Authentication"
 )]
@@ -176,23 +170,32 @@ async fn register(
     post,
     path = "/api/auth/logout",
     responses(
-        (status = 200, description = "Logout successful", body = Response)
+        (status = 200, description = "Logout successful", body = Response),
+        (status = 401, description = "Already logged out")
     ),
     tag = "Authentication"
 )]
-#[post("/logout")]
-async fn logout() -> HttpResponse {
+#[post("/logout", wrap = "RequireAuth")]
+async fn logout(
+    user: Authenticated,
+    data: web::Data<AppState>,
+) -> Result<HttpResponse, HttpError> {
     let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.clone(), "")
         .path("/")
         .max_age(Duration::seconds(0))
         .http_only(true)
         .finish();
 
-    // TODO!: set the last_token_id of the user (db) to NULL
+    data.db_client
+        .modify_user_last_token_id(None, &user.id)
+        .await
+        .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-    HttpResponse::Ok()
-        .cookie(cookie)
-        .json(json!({"status": Status::Success}))
+    Ok(
+        HttpResponse::Ok()
+            .cookie(cookie)
+            .json(json!({"status": Status::Success}))
+    )
 }
 
 #[utoipa::path(
@@ -200,7 +203,10 @@ async fn logout() -> HttpResponse {
     path = "/api/auth/refresh",
     responses(
         (status = 200, description = "Token refreshed successfully", body = Response),
-        (status = 401, description = "Invalid or expired refresh token", body = Response)
+        (status = 401, description = "Invalid or expired refresh token")
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "Authentication"
 )]

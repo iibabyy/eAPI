@@ -38,7 +38,7 @@ impl FromRequest for Authenticated {
             Some(user) => Ok(Authenticated(user)),
             None => Err(ErrorInternalServerError(ErrorResponse {
                 status: "fail".to_string(),
-                message: ErrorMessage::UserNotFound.to_string(),
+                message: ErrorMessage::InvalidToken.to_string(),
             })),
         };
 
@@ -108,7 +108,7 @@ where
                 .ok_or_else(|| {
                     ErrorUnauthorized(ErrorResponse {
                         status: "fail".to_string(),
-                        message: ErrorMessage::UserNotFound.to_string(),
+                        message: ErrorMessage::InvalidToken.to_string(),
                     })
                 })?;
 

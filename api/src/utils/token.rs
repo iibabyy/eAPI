@@ -6,7 +6,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::error::{ErrorMessage, ErrorResponse, HttpError};
+use crate::{error::{ErrorMessage, ErrorResponse, HttpError}, utils::status::Status};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
@@ -66,19 +66,17 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<TokenClai
 
 fn jwt_failed(message: impl Display) -> ErrorResponse {
     ErrorResponse {
-        status: "fail".to_string(),
+        status: Status::Failure.to_string(),
         message: message.to_string(),
     }
 }
 
 pub fn extract_token_from(request: &HttpRequest) -> Result<String, ErrorResponse> {
-    let value = request.headers().get(http::header::AUTHORIZATION);
-
-    if value.is_none() {
+    let Some(value) = request.headers().get(http::header::AUTHORIZATION) else {
         return Err(jwt_failed(ErrorMessage::TokenNotProvided));
-    }
+    };
 
-    let value = match value.unwrap().to_str() {
+    let value = match value.to_str() {
         Ok(value) => value,
         Err(_err) => return Err(jwt_failed(ErrorMessage::InvalidToken)),
     };

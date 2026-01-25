@@ -51,8 +51,8 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
     ),
     responses(
         (status = 200, description = "User found", body = ForeignUserResponseDto),
-        (status = 401, description = "Unauthorized", body = Response),
-        (status = 404, description = "User not found", body = Response)
+        (status = 401, description = "User not logged in"),
+        (status = 404, description = "User not found")
     ),
     security(
         ("bearer_auth" = [])
@@ -84,7 +84,7 @@ async fn get_by_id(
     path = "/api/users/me",
     responses(
         (status = 200, description = "Current user information", body = UserResponseDto),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
@@ -111,8 +111,8 @@ async fn get_me(user: Authenticated) -> Result<HttpResponse, HttpError> {
     ),
     responses(
         (status = 204, description = "Balance updated successfully"),
-        (status = 400, description = "Invalid request data", body = Response),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 400, description = "Invalid request data"),
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
@@ -147,7 +147,7 @@ async fn add_sold(
     path = "/api/users/me",
     responses(
         (status = 204, description = "User deleted successfully"),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
@@ -173,7 +173,7 @@ async fn delete(user: Authenticated, data: web::Data<AppState>) -> Result<HttpRe
     ),
     responses(
         (status = 200, description = "Users retrieved successfully", body = UserListResponseDto),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
@@ -225,7 +225,7 @@ pub mod products {
         ),
         responses(
             (status = 200, description = "User's products retrieved successfully", body = ProductListResponseDto),
-            (status = 401, description = "Unauthorized", body = Response)
+            (status = 401, description = "User not logged in")
         ),
         security(
             ("bearer_auth" = [])
@@ -267,8 +267,8 @@ pub mod products {
         ),
         responses(
             (status = 200, description = "User's products retrieved successfully", body = FilterProductListResponseDto),
-            (status = 401, description = "Unauthorized", body = Response),
-            (status = 404, description = "User not found", body = Response)
+            (status = 401, description = "User not logged in"),
+            (status = 404, description = "User not found")
         ),
         security(
             ("bearer_auth" = [])
@@ -325,7 +325,7 @@ pub mod orders {
         ),
         responses(
             (status = 200, description = "User's orders retrieved successfully", body = OrderListResponseDto),
-            (status = 401, description = "Unauthorized", body = Response)
+            (status = 401, description = "User not logged in")
         ),
         security(
             ("bearer_auth" = [])

@@ -41,8 +41,8 @@ pub(super) fn config(config: &mut web::ServiceConfig) {
     ),
     responses(
         (status = 200, description = "Product found", body = FilterProductResponseDto),
-        (status = 401, description = "Unauthorized", body = Response),
-        (status = 404, description = "Product not found", body = Response)
+        (status = 401, description = "User not logged in"),
+        (status = 404, description = "Product not found")
     ),
     security(
         ("bearer_auth" = [])
@@ -77,9 +77,9 @@ async fn get_by_id(
     ),
     responses(
         (status = 204, description = "Product deleted successfully"),
-        (status = 401, description = "Unauthorized", body = Response),
-        (status = 403, description = "Permission denied", body = Response),
-        (status = 404, description = "Product not found", body = Response)
+        (status = 401, description = "User not logged in"),
+        (status = 403, description = "Permission denied"),
+        (status = 404, description = "Product not found")
     ),
     security(
         ("bearer_auth" = [])
@@ -124,7 +124,7 @@ async fn delete(
     ),
     responses(
         (status = 200, description = "Products retrieved successfully", body = FilterProductListResponseDto),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
@@ -165,8 +165,8 @@ async fn get_all(
     request_body = CreateProductDto,
     responses(
         (status = 200, description = "Product created successfully", body = ProductResponseDto),
-        (status = 400, description = "Invalid request data", body = Response),
-        (status = 401, description = "Unauthorized", body = Response)
+        (status = 400, description = "Invalid request data"),
+        (status = 401, description = "User not logged in")
     ),
     security(
         ("bearer_auth" = [])
