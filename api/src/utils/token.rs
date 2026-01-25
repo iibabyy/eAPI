@@ -84,7 +84,7 @@ pub fn extract_token_from(request: &HttpRequest) -> Result<String, ErrorResponse
     };
 
     let Some((token_type, token_value)) = value.split_once(' ') else {
-        return Err(jwt_failed(ErrorMessage::InvalidToken))
+        return Err(jwt_failed(ErrorMessage::InvalidToken));
     };
 
     if token_type != "Bearer" {

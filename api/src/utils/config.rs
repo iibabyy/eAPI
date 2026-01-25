@@ -25,7 +25,7 @@ impl Config {
             // redis_url,
             secret_key,
             access_token_max_seconds,
-            refresh_token_max_seconds
+            refresh_token_max_seconds,
         }
     }
 }

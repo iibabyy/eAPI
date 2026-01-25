@@ -1,6 +1,12 @@
 use crate::{
     database::ProductExtractor,
-    dtos::{products::{FilterProductDto, FilterProductResponseDto, FilterProductListResponseDto, CreateProductDto, ProductResponseDto, ProductDto}, RequestQueryDto},
+    dtos::{
+        products::{
+            CreateProductDto, FilterProductDto, FilterProductListResponseDto,
+            FilterProductResponseDto, ProductDto, ProductResponseDto,
+        },
+        RequestQueryDto,
+    },
     error::{ErrorMessage, HttpError},
     middleware::{Authenticated, RequireAuth},
     utils::{status::Status, AppState},

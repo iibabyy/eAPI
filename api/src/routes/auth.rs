@@ -1,5 +1,8 @@
 use actix_web::{
-    HttpRequest, HttpResponse, cookie::{CookieBuilder, SameSite, time::Duration}, post, web::{self, Json}
+    cookie::{time::Duration, CookieBuilder, SameSite},
+    post,
+    web::{self, Json},
+    HttpRequest, HttpResponse,
 };
 use chrono::Utc;
 use serde_json::json;
@@ -8,12 +11,18 @@ use validator::Validate;
 
 use crate::{
     database::{
-        UserExtractor, UserModifier, UserUtils, transaction::{DBTransaction, ITransaction}
+        transaction::{DBTransaction, ITransaction},
+        UserExtractor, UserModifier, UserUtils,
     },
-    dtos::users::{FilterUserDto, LoginResponseDto, LoginUserDto, RegisterUserDto, UserResponseDto},
+    dtos::users::{
+        FilterUserDto, LoginResponseDto, LoginUserDto, RegisterUserDto, UserResponseDto,
+    },
     error::{ErrorMessage, HttpError},
     utils::{
-        AppState, constants, password, status::Status, token::{self, extract_token_from}
+        constants, password,
+        status::Status,
+        token::{self, extract_token_from},
+        AppState,
     },
 };
 
@@ -538,7 +547,9 @@ mod tests {
         let db_client = DBClient::new(pool);
         let config = test_config();
 
-        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password").await;
+        let _ = db_client
+            .save_user("Ayoub Arab", "ayarab@gmail.com", "password")
+            .await;
 
         let app = test::init_service(
             App::new()
@@ -577,7 +588,9 @@ mod tests {
         let db_client = DBClient::new(pool);
         let config = test_config();
 
-        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password").await;
+        let _ = db_client
+            .save_user("Ayoub Arab", "ayarab@gmail.com", "password")
+            .await;
 
         let app = test::init_service(
             App::new()

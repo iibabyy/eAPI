@@ -133,8 +133,10 @@ impl From<sqlx::Error> for HttpError {
                 if message == "auto-buying" {
                     HttpError::bad_request(ErrorMessage::AutoBuying)
                 } else {
-                        eprintln!("Warning: unknown database error: {message} -> convert it to server error");
-                        HttpError::server_error(ErrorMessage::ServerError)
+                    eprintln!(
+                        "Warning: unknown database error: {message} -> convert it to server error"
+                    );
+                    HttpError::server_error(ErrorMessage::ServerError)
                 }
             }
 

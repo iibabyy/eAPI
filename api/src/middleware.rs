@@ -173,10 +173,7 @@ where
 mod tests {
     use actix_web::{
         get,
-        http::{
-            self,
-            header::HeaderValue,
-        },
+        http::{self, header::HeaderValue},
         test, App, HttpResponse,
     };
     use sqlx::{Pool, Postgres};

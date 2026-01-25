@@ -8,7 +8,10 @@ use crate::{
         products::{
             FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto,
         },
-        users::{FilterForeignUserDto, ForeignUserResponseDto, FilterUserDto, UserResponseDto, AddSoldDto, UserListResponseDto},
+        users::{
+            AddSoldDto, FilterForeignUserDto, FilterUserDto, ForeignUserResponseDto,
+            UserListResponseDto, UserResponseDto,
+        },
         RequestQueryDto,
     },
     error::{ErrorMessage, HttpError},
@@ -376,10 +379,7 @@ pub mod orders {
 #[cfg(test)]
 mod tests {
     use actix_web::{
-        http::{
-            self,
-            header::HeaderValue,
-        },
+        http::{self, header::HeaderValue},
         test, App,
     };
     use sqlx::{Pool, Postgres};
