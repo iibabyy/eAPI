@@ -20,7 +20,8 @@ pub fn test_config() -> Config {
         database_url: "".to_string(),
         // redis_url: "".to_string(),
         secret_key: "my-test-secret".to_string(),
-        jwt_max_seconds: 60 * 2,
+        access_token_max_seconds: 1 * 60,
+        refresh_token_max_seconds: 5 * 60,
     }
 }
 

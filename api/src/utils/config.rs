@@ -6,7 +6,8 @@ pub struct Config {
     pub database_url: String,
     // pub redis_url: String,
     pub secret_key: String,
-    pub jwt_max_seconds: i64,
+    pub access_token_max_seconds: i64,
+    pub refresh_token_max_seconds: i64,
 }
 
 impl Config {
@@ -15,14 +16,16 @@ impl Config {
         // let redis_url = redis_url();
         let port = port();
         let secret_key = secret_key();
-        let jwt_max_age = jwt_max_age();
+        let access_token_max_seconds = access_token_max_age_in_seconds();
+        let refresh_token_max_seconds = refresh_token_max_age_in_seconds();
 
         Self {
             port,
             database_url,
             // redis_url,
             secret_key,
-            jwt_max_seconds: jwt_max_age,
+            access_token_max_seconds,
+            refresh_token_max_seconds
         }
     }
 }
@@ -33,11 +36,22 @@ fn secret_key() -> String {
         .to_string()
 }
 
-fn jwt_max_age() -> i64 {
-    env::var("JWT_MAX_AGE")
-        .unwrap_or("300".to_string())
+fn access_token_max_age_in_seconds() -> i64 {
+    let minutes = env::var("ACCESS_TOKEN_MAX_AGE_IN_MINUTES")
+        .unwrap_or("15".to_string())
         .parse::<i64>()
-        .expect("JWT_MAX_AGE: invalid value")
+        .expect("ACCESS_TOKEN_MAX_AGE_IN_MINUTES: invalid value");
+
+    minutes * 60
+}
+
+fn refresh_token_max_age_in_seconds() -> i64 {
+    let days = env::var("REFRESH_TOKEN_MAX_AGE_IN_DAYS")
+        .unwrap_or("30".to_string())
+        .parse::<i64>()
+        .expect("REFRESH_TOKEN_MAX_AGE_IN_SECONDS: invalid value");
+
+    days * 24 * 60 * 60
 }
 
 fn port() -> u16 {

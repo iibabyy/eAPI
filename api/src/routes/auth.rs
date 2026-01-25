@@ -1,25 +1,19 @@
 use actix_web::{
-    cookie::{time::Duration, CookieBuilder},
-    post,
-    web::{self, Json},
-    HttpRequest, HttpResponse,
+    HttpRequest, HttpResponse, cookie::{CookieBuilder, SameSite, time::Duration}, post, web::{self, Json}
 };
+use chrono::Utc;
 use serde_json::json;
 use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
     database::{
-        transaction::{DBTransaction, ITransaction},
-        UserExtractor, UserModifier, UserUtils,
+        UserExtractor, UserModifier, UserUtils, transaction::{DBTransaction, ITransaction}
     },
-    dtos::users::*,
+    dtos::users::{FilterUserDto, LoginResponseDto, LoginUserDto, RegisterUserDto, UserResponseDto},
     error::{ErrorMessage, HttpError},
     utils::{
-        constants, password,
-        status::Status,
-        token::{self, extract_token_from},
-        AppState,
+        AppState, constants, password, status::Status, token::{self, extract_token_from}
     },
 };
 
@@ -79,10 +73,10 @@ async fn login(
     // building response
     let token_id = Uuid::new_v4();
 
-    let token = token::create_token(
+    let access_token = token::create_token(
         &user.id,
         data.env.secret_key.as_bytes(),
-        data.env.jwt_max_seconds,
+        data.env.access_token_max_seconds,
         &token_id,
     )
     .map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
@@ -90,7 +84,7 @@ async fn login(
     let refresh_token = token::create_token(
         &user.id,
         data.env.secret_key.as_bytes(),
-        60 * 10, // 10mn	// TODO: change this for prod
+        data.env.refresh_token_max_seconds,
         &Uuid::nil(),
     )
     .map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
@@ -104,15 +98,15 @@ async fn login(
 
     let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.to_string(), refresh_token)
         .path("/")
-        .max_age(Duration::seconds(data.env.jwt_max_seconds))
+        .max_age(Duration::seconds(data.env.refresh_token_max_seconds))
         .http_only(true)
-        // .same_site(SameSite::Strict)
+        .same_site(SameSite::Strict)
         .finish();
 
     Ok(HttpResponse::Ok().cookie(cookie).json(LoginResponseDto {
         status: Status::Success,
         data: filtered_user,
-        token,
+        token: access_token,
     }))
 }
 
@@ -213,6 +207,16 @@ async fn refresh(
 
     let refresh_token_claims =
         token::decode_token(refresh_token.value(), data.env.secret_key.as_bytes())?;
+
+    // check if the refresh token is still valid
+    // + 30 is to not be too strict
+    let now = usize::try_from(Utc::now().timestamp())
+        .map_err(HttpError::server_error)?;
+
+    if refresh_token_claims.exp < now + 30 {
+        return HttpError::unauthorized(ErrorMessage::InvalidToken).into();
+    }
+
     let refresh_user_id = refresh_token_claims.sub;
 
     // verify deprecated token
@@ -246,7 +250,7 @@ async fn refresh(
     let new_token = token::create_token(
         &refresh_user_id,
         data.env.secret_key.as_bytes(),
-        data.env.jwt_max_seconds,
+        data.env.access_token_max_seconds,
         &new_token_id,
     )
     .map_err(|_| HttpError::server_error(ErrorMessage::HashingError))?;
