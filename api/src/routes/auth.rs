@@ -173,6 +173,9 @@ async fn register(
         (status = 200, description = "Logout successful", body = Response),
         (status = 401, description = "Already logged out")
     ),
+    security(
+        ("bearer_auth" = [])
+    ),
     tag = "Authentication"
 )]
 #[post("/logout", wrap = "RequireAuth")]
