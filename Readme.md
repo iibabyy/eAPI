@@ -14,8 +14,8 @@ A secure web API built with Rust and Actix-web framework, featuring JWT authenti
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/iibabyy/eAPI.git
-   cd myapi
+   git clone https://github.com/iibabyy/eAPI.git --depth 1
+   cd eAPI
    ```
 
 2. **Build and run the application**:
@@ -28,11 +28,6 @@ A secure web API built with Rust and Actix-web framework, featuring JWT authenti
    > ```bash
    > make detach
    > ```
-
-3. **Clear the application cache**:
-   ```bash
-   make fclean
-   ```
 
 ## API Documentation
 
