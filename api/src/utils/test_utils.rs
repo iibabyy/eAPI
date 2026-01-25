@@ -17,10 +17,10 @@ pub struct TestUser {
 pub fn test_config() -> Config {
     Config {
         port: 8000,
-        database_url: "".to_string(),
+        database_url: String::new(),
         // redis_url: "".to_string(),
         secret_key: "my-test-secret".to_string(),
-        access_token_max_seconds: 1 * 60,
+        access_token_max_seconds: 60,
         refresh_token_max_seconds: 5 * 60,
     }
 }
@@ -156,6 +156,7 @@ pub struct TestOrder {
     products_number: i32,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(Clone, Copy)]
 pub struct TestOrderData {
     pub order_id: Uuid,

@@ -1,8 +1,11 @@
+#![allow(clippy::needless_for_each)]
+
 use utoipa::{
     openapi::security::{Http, HttpAuthScheme, SecurityScheme},
     Modify, OpenApi,
 };
 
+#[allow(clippy::wildcard_imports)]
 use crate::{
     dtos::{orders::*, products::*, users::*, *},
     error::*,
@@ -19,12 +22,12 @@ impl Modify for SecurityAddon {
             components.add_security_scheme(
                 "bearer_auth",
                 SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer)),
-            )
+            );
         }
     }
 }
 
-/// Main OpenAPI documentation for the eAPI
+/// Main `OpenAPI` documentation for the eAPI
 #[derive(OpenApi)]
 #[openapi(
     paths(

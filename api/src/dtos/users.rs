@@ -57,8 +57,8 @@ pub struct FilterForeignUserDto {
 impl FilterForeignUserDto {
     pub fn filter_user(user: &User) -> Self {
         FilterForeignUserDto {
-            email: user.email.to_owned(),
-            name: user.name.to_owned(),
+            email: user.email.clone(),
+            name: user.name.clone(),
             created_at: user.created_at,
             updated_at: user.updated_at,
         }
@@ -89,8 +89,8 @@ impl FilterUserDto {
     pub fn filter_user(user: &User) -> Self {
         FilterUserDto {
             id: user.id.to_string(),
-            email: user.email.to_owned(),
-            name: user.name.to_owned(),
+            email: user.email.clone(),
+            name: user.name.clone(),
             sold_in_cents: user.sold_in_cents,
             created_at: user.created_at,
             updated_at: user.updated_at,
@@ -125,7 +125,7 @@ pub struct LoginResponseDto {
 }
 
 #[derive(Validate, Debug, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+// #[serde(rename_all = "camelCase")]
 pub struct AddSoldDto {
     // 1m cents -> 10k dollars
     #[validate(range(min = 1, max = 1_000_000, message = "Invalid field soldToAdd"))]

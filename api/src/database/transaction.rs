@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use sqlx::{PgConnection, Pool, Postgres, Transaction};
 use uuid::Uuid;
 
@@ -49,7 +47,7 @@ pub struct DBTransaction<'c> {
     tx: Transaction<'c, sqlx::Postgres>,
 }
 
-impl<'c> DBTransaction<'c> {
+impl DBTransaction<'_> {
     pub async fn begin(pool: &Pool<Postgres>) -> Result<Self, sqlx::Error> {
         let tx = pool.begin().await?;
 
@@ -67,15 +65,15 @@ impl ITransaction for DBTransaction<'_> {
 
     async fn lock_user(mut self, user_id: &Uuid) -> Result<Self, Self::Error> {
         let _ = sqlx::query(
-            r#"
+            r"
 			SELECT
 			FROM users
 			WHERE id = $1
 			FOR UPDATE
-			"#,
+			",
         )
         .bind(user_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -87,15 +85,15 @@ impl ITransaction for DBTransaction<'_> {
         to_decrease: i64,
     ) -> Result<Self, Self::Error> {
         let _ = sqlx::query(
-            r#"
+            r"
 				UPDATE users
 				SET sold_in_cents = sold_in_cents - $1
 				WHERE id = $2
-				"#,
+				",
         )
         .bind(to_decrease)
         .bind(user_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -107,15 +105,15 @@ impl ITransaction for DBTransaction<'_> {
         to_increase: i64,
     ) -> Result<Self, Self::Error> {
         let _ = sqlx::query(
-            r#"
+            r"
 				UPDATE users
 				SET sold_in_cents = sold_in_cents + $1
 				WHERE id = $2
-				"#,
+				",
         )
         .bind(to_increase)
         .bind(user_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -123,15 +121,15 @@ impl ITransaction for DBTransaction<'_> {
 
     async fn lock_product(mut self, product_id: &Uuid) -> Result<Self, Self::Error> {
         let _ = sqlx::query(
-            r#"
+            r"
 				SELECT
 				FROM products
 				WHERE id = $1
 				FOR UPDATE
-				"#,
+				",
         )
         .bind(product_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -143,15 +141,15 @@ impl ITransaction for DBTransaction<'_> {
         to_decrease: i32,
     ) -> Result<Self, Self::Error> {
         sqlx::query(
-            r#"
+            r"
 				UPDATE products
 				SET number_in_stock = number_in_stock - $1
 				WHERE id = $2
-				"#,
+				",
         )
         .bind(to_decrease)
         .bind(product_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -163,15 +161,15 @@ impl ITransaction for DBTransaction<'_> {
         to_increase: i32,
     ) -> Result<Self, Self::Error> {
         sqlx::query(
-            r#"
+            r"
 				UPDATE products
 				SET number_in_stock = number_in_stock + $1
 				WHERE id = $2
-				"#,
+				",
         )
         .bind(to_increase)
         .bind(product_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
@@ -186,28 +184,28 @@ impl ITransaction for DBTransaction<'_> {
             bcrypt::hash(new_token_id.to_string(), 4).map_err(|_| sqlx::Error::WorkerCrashed)?; // no the real error
 
         sqlx::query(
-            r#"
+            r"
 			UPDATE users
 			SET last_token_id = $1
 			WHERE id = $2
-			"#,
+			",
         )
         .bind(hashed_id)
         .bind(user_id)
-        .execute(self.deref_mut())
+        .execute(&mut *self)
         .await?;
 
         Ok(self)
     }
 }
 
-impl<'a> std::ops::DerefMut for DBTransaction<'a> {
+impl std::ops::DerefMut for DBTransaction<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.tx.deref_mut()
     }
 }
 
-impl<'a> std::ops::Deref for DBTransaction<'a> {
+impl std::ops::Deref for DBTransaction<'_> {
     type Target = PgConnection;
 
     fn deref(&self) -> &Self::Target {

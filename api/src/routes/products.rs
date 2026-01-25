@@ -1,6 +1,6 @@
 use crate::{
     database::ProductExtractor,
-    dtos::{products::*, *},
+    dtos::{products::{FilterProductDto, FilterProductResponseDto, FilterProductListResponseDto, CreateProductDto, ProductResponseDto, ProductDto}, RequestQueryDto},
     error::{ErrorMessage, HttpError},
     middleware::{Authenticated, RequireAuth},
     utils::{status::Status, AppState},
@@ -169,6 +169,7 @@ async fn get_all(
 )]
 #[post("", wrap = "RequireAuth")]
 async fn create(
+    user: Authenticated,
     product: Json<CreateProductDto>,
     data: web::Data<AppState>,
 ) -> Result<HttpResponse, HttpError> {
@@ -180,7 +181,7 @@ async fn create(
         .db_client
         .save_product(
             &product.name,
-            &product.user_id,
+            &user.id,
             product.description.as_ref(),
             product.price_in_cents,
             product.number_in_stock,
@@ -346,7 +347,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
-    #[should_panic]
+    #[should_panic = "invalid token should not work"]
     async fn get_all_products_with_invalid_token(pool: Pool<Postgres>) {
         let (data, _, _) = init_test_products(&pool).await;
         let db_client = DBClient::new(pool.clone());
@@ -532,7 +533,6 @@ mod tests {
             .uri("/products")
             .set_json(CreateProductDto {
                 name: "Smartphone".to_string(),
-                user_id: data.user_id,
                 description: Some("A black smartphone".to_string()),
                 price_in_cents: 250 * 100,
                 number_in_stock: 1,
@@ -590,7 +590,6 @@ mod tests {
             .uri("/products")
             .set_json(CreateProductDto {
                 name: "a".repeat(101), // max is 100 characters
-                user_id: data.user_id,
                 description: None,
                 price_in_cents: 250 * 100,
                 number_in_stock: 1,
@@ -645,7 +644,6 @@ mod tests {
             .uri("/products")
             .set_json(CreateProductDto {
                 name: "test".to_string(),
-                user_id: data.user_id,
                 description: Some("a".repeat(1001)), // max is 1000 characters
                 price_in_cents: 250 * 100,
                 number_in_stock: 1,
@@ -709,10 +707,7 @@ mod tests {
             .await
             .expect("Failed to get product by id");
 
-        match result {
-            Some(_) => panic!("User found, but no one expected"),
-            None => (), // deleted user not found, Ok
-        }
+        assert!(result.is_none(), "User found, but no one expected");
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -805,10 +800,7 @@ mod tests {
             .await
             .expect("Failed to get product by id");
 
-        match result {
-            Some(_) => panic!("User found, but no one expected"),
-            None => (), // deleted user not found, Ok
-        }
+        assert!(result.is_none(), "User found, but no one expected");
 
         // second request (same)
 

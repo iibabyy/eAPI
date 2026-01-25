@@ -210,8 +210,7 @@ async fn refresh(
 
     // check if the refresh token is still valid
     // + 30 is to not be too strict
-    let now = usize::try_from(Utc::now().timestamp())
-        .map_err(HttpError::server_error)?;
+    let now = Utc::now().timestamp() as usize;
 
     if refresh_token_claims.exp < now + 30 {
         return HttpError::unauthorized(ErrorMessage::InvalidToken).into();
@@ -531,7 +530,7 @@ mod tests {
         let expected_message = "Email or password is wrong";
         let actual_mesage = body["message"].as_str().unwrap();
 
-        assert_eq!(actual_mesage, expected_message)
+        assert_eq!(actual_mesage, expected_message);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -539,7 +538,7 @@ mod tests {
         let db_client = DBClient::new(pool);
         let config = test_config();
 
-        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password");
+        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password").await;
 
         let app = test::init_service(
             App::new()
@@ -570,7 +569,7 @@ mod tests {
         let expected_message = "Email or password is wrong";
         let actual_mesage = body["message"].as_str().unwrap();
 
-        assert_eq!(actual_mesage, expected_message)
+        assert_eq!(actual_mesage, expected_message);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -578,7 +577,7 @@ mod tests {
         let db_client = DBClient::new(pool);
         let config = test_config();
 
-        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password");
+        let _ = db_client.save_user("Ayoub Arab", "ayarab@gmail.com", "password").await;
 
         let app = test::init_service(
             App::new()
@@ -609,7 +608,7 @@ mod tests {
         let expected_message = "Email or password is wrong";
         let actual_mesage = body["message"].as_str().unwrap();
 
-        assert_eq!(actual_mesage, expected_message)
+        assert_eq!(actual_mesage, expected_message);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -697,7 +696,7 @@ mod tests {
         let new_refresh_token = resp
             .response()
             .cookies()
-            .find(|cookie| cookie.name().to_string() == REFRESH_TOKEN.to_string())
+            .find(|cookie| cookie.name() == REFRESH_TOKEN.to_string())
             .expect("Refresh cookie not cleared");
 
         assert!(new_refresh_token.value().is_empty());

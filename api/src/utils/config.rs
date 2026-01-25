@@ -33,7 +33,7 @@ impl Config {
 fn secret_key() -> String {
     env::var("SECRET_KEY")
         .expect("DATABASE_URL need to be set")
-        .to_string()
+        .clone()
 }
 
 fn access_token_max_age_in_seconds() -> i64 {
@@ -74,7 +74,7 @@ fn port() -> u16 {
 
 fn database_url() -> String {
     let user = env::var("POSTGRES_USER").expect("POSTGRES_USER need to be set");
-    let password = env::var("POSTGRES_PASSWORD").unwrap_or("".to_string());
+    let password = env::var("POSTGRES_PASSWORD").unwrap_or_default();
     let host = env::var("POSTGRES_HOST").unwrap_or("0.0.0.0".to_string());
     let port = env::var("POSTGRES_PORT")
         .unwrap_or("5432".to_string())

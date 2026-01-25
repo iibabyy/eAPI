@@ -80,7 +80,7 @@ fn check_order(user: &User, product: &Product, order: &Order) -> Result<(), Http
         return HttpError::conflict(ErrorMessage::ProductOutOfStock).into();
     }
 
-    let total_cost = product.price_in_cents * order.products_number as i64;
+    let total_cost = product.price_in_cents * i64::from(order.products_number);
 
     if user.sold_in_cents < total_cost {
         return HttpError::payment_required(ErrorMessage::SoldTooLow).into();
@@ -130,7 +130,7 @@ async fn validate(
 
     check_order(&user, &product, &order)?;
 
-    let total_cost = product.price_in_cents * order.products_number as i64;
+    let total_cost = product.price_in_cents * i64::from(order.products_number);
 
     // building a transaction to thread-safely modify values in database
     DBTransaction::begin(data.db_client.pool())
@@ -494,10 +494,7 @@ mod tests {
             .await
             .expect("Failed to get order by id");
 
-        match result {
-            Some(_) => panic!("User found, but no one expected"),
-            None => (), // deleted user not found, Ok
-        }
+        assert!(result.is_none(), "User found, but no one expected");
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -639,10 +636,7 @@ mod tests {
             .await
             .expect("Failed to get order by id");
 
-        match result {
-            Some(_) => panic!("User found, but no one expected"),
-            None => (), // deleted user not found, Ok
-        }
+        assert!(result.is_none(), "User found, but no one expected");
 
         // second request (same)
 

@@ -1,3 +1,8 @@
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::cast_possible_wrap)]
+
 mod database;
 mod docs;
 mod dtos;

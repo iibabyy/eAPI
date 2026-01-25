@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use actix_web::{http, HttpRequest};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
@@ -14,7 +16,7 @@ pub struct TokenClaims {
     // created at
     pub iat: usize,
 
-    // expire {exp} seconds(?) after iat
+    // expire
     pub exp: usize,
 
     // JWT id
@@ -62,7 +64,7 @@ pub fn decode_token(token: impl Into<String>, secret: &[u8]) -> Result<TokenClai
     }
 }
 
-fn jwt_failed(message: impl ToString) -> ErrorResponse {
+fn jwt_failed(message: impl Display) -> ErrorResponse {
     ErrorResponse {
         status: "fail".to_string(),
         message: message.to_string(),
@@ -81,9 +83,8 @@ pub fn extract_token_from(request: &HttpRequest) -> Result<String, ErrorResponse
         Err(_err) => return Err(jwt_failed(ErrorMessage::InvalidToken)),
     };
 
-    let (token_type, token_value) = match value.split_once(' ') {
-        Some(result) => result,
-        None => return Err(jwt_failed(ErrorMessage::InvalidToken)),
+    let Some((token_type, token_value)) = value.split_once(' ') else {
+        return Err(jwt_failed(ErrorMessage::InvalidToken))
     };
 
     if token_type != "Bearer" {
@@ -119,7 +120,7 @@ mod tests {
 
         let error = result.unwrap_err();
         assert_eq!(error.status, 401);
-        assert_eq!(error.message, ErrorMessage::InvalidToken.to_string())
+        assert_eq!(error.message, ErrorMessage::InvalidToken.to_string());
     }
 
     #[test]
@@ -133,6 +134,6 @@ mod tests {
 
         let error = result.unwrap_err();
         assert_eq!(error.status, 401);
-        assert_eq!(error.message, ErrorMessage::InvalidToken.to_string())
+        assert_eq!(error.message, ErrorMessage::InvalidToken.to_string());
     }
 }

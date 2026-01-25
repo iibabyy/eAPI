@@ -26,11 +26,11 @@ impl DBClient {
 impl UserExtractor for DBClient {
     async fn get_user(&self, user_id: &Uuid) -> Result<Option<User>, sqlx::Error> {
         let user: Option<User> = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE id = $1
-			"#,
+			",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
@@ -41,11 +41,11 @@ impl UserExtractor for DBClient {
 
     async fn get_user_by_email(&self, email: String) -> Result<Option<User>, sqlx::Error> {
         let user: Option<User> = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE email = $1
-			"#,
+			",
         )
         .bind(email)
         .fetch_optional(&self.pool)
@@ -63,13 +63,13 @@ impl UserExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let users: Vec<User> = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE name = $1
 			LIMIT $2
 			OFFSET $3
-			"#,
+			",
         )
         .bind(name)
         .bind(limit as i64)
@@ -84,12 +84,12 @@ impl UserExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let users: Vec<User> = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			LIMIT $1
 			OFFSET $2
-			"#,
+			",
         )
         .bind(limit as i64)
         .bind(offset as i64)
@@ -108,13 +108,13 @@ impl UserExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let users: Vec<User> = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			SELECT id, name, email, password, sold_in_cents, last_token_id, created_at, updated_at
 			FROM users
 			WHERE starts_with(name, $1)
 			LIMIT $2
 			OFFSET $3
-			"#,
+			",
         )
         .bind(name)
         .bind(limit as i64)
@@ -132,11 +132,11 @@ impl UserExtractor for DBClient {
         password: T,
     ) -> Result<User, sqlx::Error> {
         let user = sqlx::query_as::<_, User>(
-            r#"
+            r"
 			INSERT INTO users ( name, email, password )
 			VALUES ( $1, $2, $3 )
 			RETURNING id, name, email, password, sold_in_cents, last_token_id, updated_at, created_at
-			"#,
+			",
         )
         .bind(name.into())
         .bind(email.into())
@@ -149,10 +149,10 @@ impl UserExtractor for DBClient {
 
     async fn delete_user(&self, user_id: &Uuid) -> Result<(), sqlx::Error> {
         let result = sqlx::query(
-            r#"
+            r"
 			DELETE FROM users
 			WHERE id = $1
-			"#,
+			",
         )
         .bind(user_id)
         .execute(self.pool())
@@ -180,11 +180,11 @@ impl UserModifier for DBClient {
         };
 
         sqlx::query(
-            r#"
+            r"
 			UPDATE users
 			SET last_token_id = $1
 			WHERE id = $2
-			"#,
+			",
         )
         .bind(value)
         .bind(user_id)
@@ -199,11 +199,11 @@ impl UserModifier for DBClient {
 impl ProductExtractor for DBClient {
     async fn get_product(&self, product_id: &Uuid) -> Result<Option<Product>, sqlx::Error> {
         let product: Option<Product> = sqlx::query_as::<_, Product>(
-            r#"
+            r"
 			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE id = $1
-			"#,
+			",
         )
         .bind(product_id)
         .fetch_optional(&self.pool)
@@ -221,13 +221,13 @@ impl ProductExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let products: Vec<Product> = sqlx::query_as::<_, Product>(
-            r#"
+            r"
 			SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 			FROM products
 			WHERE user_id = $1
 			LIMIT $2
 			OFFSET $3
-			"#,
+			",
         )
         .bind(user_id)
         .bind(limit as i64)
@@ -247,13 +247,13 @@ impl ProductExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let products: Vec<Product> = sqlx::query_as::<_, Product>(
-            r#"
+            r"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE name = $1
 				LIMIT $2
 				OFFSET $3
-				"#,
+				",
         )
         .bind(name)
         .bind(limit as i64)
@@ -268,12 +268,12 @@ impl ProductExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let products: Vec<Product> = sqlx::query_as::<_, Product>(
-            r#"
+            r"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				LIMIT $1
 				OFFSET $2
-				"#,
+				",
         )
         .bind(limit as i64)
         .bind(offset as i64)
@@ -292,13 +292,13 @@ impl ProductExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let products: Vec<Product> = sqlx::query_as::<_, Product>(
-            r#"
+            r"
 				SELECT id, name, user_id, description, price_in_cents, number_in_stock, created_at, updated_at
 				FROM products
 				WHERE starts_with(name, $1)
 				LIMIT $2
 				OFFSET $3
-				"#,
+				",
         )
         .bind(name)
         .bind(limit as i64)
@@ -318,11 +318,11 @@ impl ProductExtractor for DBClient {
         number_in_stock: i32,
     ) -> Result<Product, sqlx::Error> {
         let product = sqlx::query_as::<_, Product>(
-				r#"
+				r"
 				INSERT INTO products ( name, user_id, description, price_in_cents, number_in_stock )
 				VALUES ( $1, $2, $3, $4, $5 )
 				RETURNING id, name, user_id, description, price_in_cents, number_in_stock, updated_at, created_at
-				"#
+				"
 			)
 			.bind(name.into())
 			.bind(user_id)
@@ -337,10 +337,10 @@ impl ProductExtractor for DBClient {
 
     async fn delete_product(&self, user_id: &Uuid) -> Result<(), sqlx::Error> {
         let result = sqlx::query(
-            r#"
+            r"
 			DELETE FROM products
 			WHERE id = $1
-			"#,
+			",
         )
         .bind(user_id)
         .execute(&self.pool)
@@ -358,11 +358,11 @@ impl ProductExtractor for DBClient {
 impl OrderExtractor for DBClient {
     async fn get_order(&self, order_id: &Uuid) -> Result<Option<Order>, sqlx::Error> {
         let order = sqlx::query_as::<_, Order>(
-            r#"
+            r"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE id = $1
-				"#,
+				",
         )
         .bind(order_id)
         .fetch_optional(self.pool())
@@ -397,12 +397,12 @@ impl OrderExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let orders = sqlx::query_as::<_, Order>(
-            r#"
+            r"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				ORDER BY created_at DESC
 				LIMIT $1 OFFSET $2
-				"#,
+				",
         )
         .bind(limit as i64)
         .bind(offset as i64)
@@ -420,11 +420,11 @@ impl OrderExtractor for DBClient {
         products_number: i32,
     ) -> Result<Order, sqlx::Error> {
         let order = sqlx::query_as::<_, Order>(
-            r#"
+            r"
 				INSERT INTO orders( user_id, product_id, order_details_id, products_number )
 				VALUES ( $1, $2, $3, $4 )
 				RETURNING id, user_id, product_id, order_details_id, created_at, updated_at, products_number
-				"#,
+				",
         )
         .bind(user_id)
         .bind(product_id)
@@ -438,10 +438,10 @@ impl OrderExtractor for DBClient {
 
     async fn delete_order(&self, order_id: &Uuid) -> Result<(), sqlx::Error> {
         let result = sqlx::query(
-            r#"
+            r"
 			DELETE FROM orders
 			WHERE id = $1
-			"#,
+			",
         )
         .bind(order_id)
         .execute(self.pool())
@@ -463,13 +463,13 @@ impl OrderExtractor for DBClient {
         let offset = (page - 1) * limit as u32;
 
         let orders = sqlx::query_as::<_, Order>(
-            r#"
+            r"
 				SELECT id, user_id, product_id, order_details_id, created_at, updated_at, products_number
 				FROM orders
 				WHERE user_id = $1
 				ORDER BY created_at DESC
 				LIMIT $2 OFFSET $3
-				"#,
+				",
         )
         .bind(user_id)
         .bind(limit as i64)
@@ -498,13 +498,13 @@ impl UserUtils for DBClient {
 
             if let Ok(is_valid) = result {
                 return Ok(is_valid);
-            } else {
-                return Ok(false);
             }
-        } else {
-            // no last token (first time loging)
+
             return Ok(false);
         }
+
+        // no last token (first time loging)
+        return Ok(false);
     }
 }
 
@@ -521,7 +521,7 @@ mod user_tests {
         let user = db_client
             .get_user(&id_1)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get user by id: {}", err))
+            .unwrap_or_else(|err| panic!("Failed to get user by id: {err}"))
             .expect("User not found");
 
         assert_eq!(user.id, id_1);
@@ -537,7 +537,7 @@ mod user_tests {
         let result = db_client
             .get_user(&nonexistant_id)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get user by id: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get user by id: {err}"));
 
         assert!(result.is_none(), "Expected user to be None");
     }
@@ -552,7 +552,7 @@ mod user_tests {
         let user = db_client
             .get_user_by_email(email_to_find.to_string())
             .await
-            .unwrap_or_else(|err| panic!("Failed to get user by email: {}", err))
+            .unwrap_or_else(|err| panic!("Failed to get user by email: {err}"))
             .expect("User not found");
 
         assert_eq!(user.email, email_to_find);
@@ -568,7 +568,7 @@ mod user_tests {
         let result = db_client
             .get_user_by_email(email_to_find.to_string())
             .await
-            .unwrap_or_else(|err| panic!("Failed to get user by email: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get user by email: {err}"));
 
         assert!(result.is_none(), "Expected user to be None");
     }
@@ -583,7 +583,7 @@ mod user_tests {
         let users = db_client
             .get_users_by_name(name_to_find.to_string(), 1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get users by name: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get users by name: {err}"));
 
         assert!(users.len() == 2, "Expected to found 2 users");
 
@@ -602,7 +602,7 @@ mod user_tests {
         let users = db_client
             .get_users_by_name(name_to_find.to_string(), 1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get users by name: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get users by name: {err}"));
 
         assert_eq!(users.len(), 0);
     }
@@ -615,7 +615,7 @@ mod user_tests {
         let users = db_client
             .get_all_users(1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get all users: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get all users: {err}"));
 
         assert_eq!(users.len(), 4);
     }
@@ -690,10 +690,7 @@ mod user_tests {
 
         let result = db_client.get_user(&user_id).await.unwrap();
 
-        match result {
-            Some(_) => panic!("User found, but no one expected"),
-            None => (),
-        }
+        assert!(result.is_none(), "User found, but no one expected");
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -724,7 +721,7 @@ mod products_tests {
         let product = db_client
             .get_product(&product_data.product_id)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get product by id: {}", err))
+            .unwrap_or_else(|err| panic!("Failed to get product by id: {err}"))
             .expect("product not found");
 
         assert_eq!(product.id, product_data.product_id);
@@ -740,7 +737,7 @@ mod products_tests {
         let result = db_client
             .get_product(&nonexistant_id)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get product by id: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get product by id: {err}"));
 
         assert!(result.is_none(), "Expected product to be None");
     }
@@ -753,11 +750,11 @@ mod products_tests {
         let products = db_client
             .get_products_by_user(&data.user_id, 1, 5)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get products by user: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get products by user: {err}"));
 
         assert_eq!(products.len(), 1);
 
-        let product = products.iter().nth(0).unwrap();
+        let product = products.first().unwrap();
         assert_eq!(product.user_id, data.user_id);
     }
 
@@ -771,7 +768,7 @@ mod products_tests {
         let result = db_client
             .get_products_by_user(&nonexistent_user_id, 1, 5)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get products by user id: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get products by user id: {err}"));
 
         assert_eq!(result.len(), 0);
     }
@@ -786,10 +783,10 @@ mod products_tests {
         let products = db_client
             .get_products_by_name(name_to_find.to_string(), 1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get products by name: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get products by name: {err}"));
 
         assert_eq!(products.len(), 1);
-        assert_eq!(products.iter().nth(0).unwrap().name, name_to_find);
+        assert_eq!(products.first().unwrap().name, name_to_find);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -802,7 +799,7 @@ mod products_tests {
         let products = db_client
             .get_products_by_name(name_to_find.to_string(), 1, 5)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get products by name: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get products by name: {err}"));
 
         assert_eq!(products.len(), 0);
     }
@@ -815,7 +812,7 @@ mod products_tests {
         let products = db_client
             .get_all_products(1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get all products: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get all products: {err}"));
 
         assert_eq!(products.len(), 3);
     }
@@ -842,7 +839,7 @@ mod products_tests {
 
         assert_eq!(products.len(), 1);
 
-        let product = products.iter().nth(0).unwrap();
+        let product = products.first().unwrap();
 
         assert_eq!(product.name, name);
         assert_eq!(product.user_id, user_id);
@@ -869,12 +866,12 @@ mod products_tests {
                 if db_err.is_foreign_key_violation() {
                     // Ok
                     return;
-                } else {
-                    panic!(
-                        "Foreign key violation expected, found: {}",
-                        db_err.message()
-                    )
                 }
+
+                panic!(
+                    "Foreign key violation expected, found: {}",
+                    db_err.message()
+                )
             }
             Err(err) => panic!("Database error expected, found: {err}"),
             Ok(_) => panic!("Call succeded, but a Database error was expected"),
@@ -916,10 +913,7 @@ mod products_tests {
 
         let result = db_client.get_product(&data.product_id).await.unwrap();
 
-        match result {
-            Some(_) => panic!("Product found, but no one expected"),
-            None => (),
-        }
+        assert!(result.is_none(), "Product found, but no one expected");
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -950,7 +944,7 @@ mod orders_test {
         let order = db_client
             .get_order(&order_data.order_id)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get order by id: {}", err))
+            .unwrap_or_else(|err| panic!("Failed to get order by id: {err}"))
             .expect("order not found");
 
         assert_eq!(order.id, order_data.order_id);
@@ -968,7 +962,7 @@ mod orders_test {
         let result = db_client
             .get_order(&nonexistant_id)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get order by id: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get order by id: {err}"));
 
         assert!(result.is_none(), "Expected order to be None");
     }
@@ -981,11 +975,11 @@ mod orders_test {
         let orders = db_client
             .get_orders_by_user(&data.user_id, 1, 5)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get orders by user: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get orders by user: {err}"));
 
         assert_eq!(orders.len(), 1);
 
-        let order = orders.iter().nth(0).unwrap();
+        let order = orders.first().unwrap();
         assert_eq!(order.user_id, data.user_id);
     }
 
@@ -999,7 +993,7 @@ mod orders_test {
         let result = db_client
             .get_orders_by_user(&nonexistent_user_id, 1, 5)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get orders by user id: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get orders by user id: {err}"));
 
         assert_eq!(result.len(), 0);
     }
@@ -1012,7 +1006,7 @@ mod orders_test {
         let orders = db_client
             .get_all_orders(1, 10)
             .await
-            .unwrap_or_else(|err| panic!("Failed to get all orders: {}", err));
+            .unwrap_or_else(|err| panic!("Failed to get all orders: {err}"));
 
         assert_eq!(orders.len(), 3);
     }
@@ -1043,7 +1037,7 @@ mod orders_test {
 
         assert_eq!(orders.len(), 1);
 
-        let order = orders.iter().nth(0).unwrap();
+        let order = orders.first().unwrap();
 
         assert_eq!(order.user_id, user_id.clone());
         assert_eq!(order.product_id, product_id.clone());
@@ -1069,12 +1063,12 @@ mod orders_test {
                 if db_err.is_foreign_key_violation() {
                     // Ok
                     return;
-                } else {
-                    panic!(
-                        "Foreign key violation expected, found: {}",
-                        db_err.message()
-                    )
                 }
+
+                panic!(
+                    "Foreign key violation expected, found: {}",
+                    db_err.message()
+                )
             }
             Err(err) => panic!("Database error expected, found: {err}"),
             Ok(_) => panic!("Call succeded, but a Database error was expected"),
@@ -1099,12 +1093,12 @@ mod orders_test {
                 if db_err.is_foreign_key_violation() {
                     // Ok
                     return;
-                } else {
-                    panic!(
-                        "Foreign key violation expected (found: {})",
-                        db_err.message()
-                    )
                 }
+
+                panic!(
+                    "Foreign key violation expected (found: {})",
+                    db_err.message()
+                )
             }
             Err(err) => panic!("Database error expected, found: {err}"),
             Ok(_) => panic!("Call succeded, but a Database error was expected"),
@@ -1134,12 +1128,12 @@ mod orders_test {
                 if db_err.is_foreign_key_violation() {
                     // Ok
                     return;
-                } else {
-                    panic!(
-                        "Foreign key violation expected (found: {})",
-                        db_err.message()
-                    )
                 }
+
+                panic!(
+                    "Foreign key violation expected (found: {})",
+                    db_err.message()
+                )
             }
             Err(err) => panic!("Database error expected, found: {err}"),
             Ok(_) => panic!("Call succeded, but a Database error was expected"),
@@ -1184,10 +1178,7 @@ mod orders_test {
 
         let result = db_client.get_order(&data.order_id).await.unwrap();
 
-        match result {
-            Some(_) => panic!("order found, but no one expected"),
-            None => (), // not found, ok
-        }
+        assert!(result.is_none(), "Order found, but no one expected");
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]

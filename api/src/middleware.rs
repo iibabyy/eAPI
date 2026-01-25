@@ -175,7 +175,7 @@ mod tests {
         get,
         http::{
             self,
-            header::{HeaderName, HeaderValue},
+            header::HeaderValue,
         },
         test, App, HttpResponse,
     };
@@ -233,7 +233,7 @@ mod tests {
 
         let request = test::TestRequest::default()
             .insert_header((
-                HeaderName::from(http::header::AUTHORIZATION),
+                http::header::AUTHORIZATION,
                 HeaderValue::from_str(&format!("Bearer {token}")).unwrap(),
             ))
             .to_request();
@@ -304,7 +304,7 @@ mod tests {
         let request = test::TestRequest::default()
             .uri("/")
             .insert_header((
-                HeaderName::from(http::header::AUTHORIZATION),
+                http::header::AUTHORIZATION,
                 HeaderValue::from_static("Bearer invalid-token"),
             ))
             .to_request();

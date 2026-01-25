@@ -2,7 +2,6 @@ use crate::{utils::models::Product, utils::status::Status};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use uuid::Uuid;
 use validator::Validate;
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize, ToSchema)]
@@ -11,9 +10,6 @@ pub struct CreateProductDto {
     #[validate(length(min = 1, message = "Name is required"))]
     #[schema(example = "Smartphone")]
     pub name: String,
-
-    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
-    pub user_id: Uuid,
 
     #[schema(example = "A high-quality smartphone")]
     pub description: Option<String>,
@@ -52,8 +48,8 @@ impl ProductDto {
         ProductDto {
             id: product.id,
             user_id: product.user_id,
-            name: product.name.to_owned(),
-            description: product.description.to_owned(),
+            name: product.name.clone(),
+            description: product.description.clone(),
             price_in_cents: product.price_in_cents,
             number_in_stock: product.number_in_stock,
 
@@ -81,8 +77,8 @@ impl FilterProductDto {
         FilterProductDto {
             id: product.id,
             user_id: product.user_id,
-            name: product.name.to_owned(),
-            description: product.description.to_owned(),
+            name: product.name.clone(),
+            description: product.description.clone(),
             price_in_cents: product.price_in_cents,
 
             created_at: product.created_at,

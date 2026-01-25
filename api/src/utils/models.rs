@@ -28,6 +28,7 @@ pub struct Product {
     pub updated_at: DateTime<Utc>,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(PartialEq, Eq, Debug, Clone, FromRow)]
 pub struct Order {
     pub id: Uuid,

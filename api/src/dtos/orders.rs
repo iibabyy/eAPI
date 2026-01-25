@@ -11,7 +11,6 @@ pub struct CreateOrderDto {
     #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
     pub product_id: Uuid,
 
-    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
     pub order_details_id: Option<Uuid>,
 
     #[validate(range(min = 1, message = "Product number can only be more than 1"))]

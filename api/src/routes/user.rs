@@ -8,8 +8,8 @@ use crate::{
         products::{
             FilterProductDto, FilterProductListResponseDto, ProductDto, ProductListResponseDto,
         },
-        users::*,
-        *,
+        users::{FilterForeignUserDto, ForeignUserResponseDto, FilterUserDto, UserResponseDto, AddSoldDto, UserListResponseDto},
+        RequestQueryDto,
     },
     error::{ErrorMessage, HttpError},
     middleware::{Authenticated, RequireAuth},
@@ -205,6 +205,7 @@ async fn get_all(
     }))
 }
 
+#[allow(clippy::wildcard_imports)]
 pub mod products {
     use super::*;
 
@@ -304,6 +305,7 @@ pub mod products {
     }
 }
 
+#[allow(clippy::wildcard_imports)]
 pub mod orders {
     use super::*;
 
@@ -376,7 +378,7 @@ mod tests {
     use actix_web::{
         http::{
             self,
-            header::{HeaderName, HeaderValue},
+            header::HeaderValue,
         },
         test, App,
     };
@@ -430,7 +432,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 http::header::HeaderValue::from_str(&format!("Bearer {token}")).unwrap(),
             ))
-            .uri(&format!("/users/{}", user_id))
+            .uri(&format!("/users/{user_id}"))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -517,10 +519,10 @@ mod tests {
 
         let req = test::TestRequest::get()
             .insert_header((
-                HeaderName::from(http::header::AUTHORIZATION),
+                http::header::AUTHORIZATION,
                 HeaderValue::from_str("Bearer invalid-token").unwrap(),
             ))
-            .uri(&format!("/users/{}", user_id))
+            .uri(&format!("/users/{user_id}"))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -560,7 +562,7 @@ mod tests {
         .await;
 
         let req = test::TestRequest::get()
-            .uri(&format!("/users/{}", user_id))
+            .uri(&format!("/users/{user_id}"))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -613,7 +615,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 http::header::HeaderValue::from_str(&format!("Bearer {expired_token}")).unwrap(),
             ))
-            .uri(&format!("/users/{}", user_id))
+            .uri(&format!("/users/{user_id}"))
             .to_request();
 
         let result = test::try_call_service(&app, req).await.err();
@@ -699,7 +701,7 @@ mod tests {
 
         let req = test::TestRequest::get()
             .insert_header((
-                HeaderName::from(http::header::AUTHORIZATION),
+                http::header::AUTHORIZATION,
                 HeaderValue::from_str("Bearer invalid-token").unwrap(),
             ))
             .uri("/users/me")
@@ -1088,7 +1090,7 @@ mod tests {
         }
 
         #[sqlx::test(migrator = "crate::MIGRATOR")]
-        #[should_panic]
+        #[should_panic = "invalid token should not work"]
         async fn get_user_product_with_invalid_token(pool: Pool<Postgres>) {
             let db_client = DBClient::new(pool.clone());
             let config = test_config();
@@ -1240,7 +1242,7 @@ mod tests {
         }
 
         #[sqlx::test(migrator = "crate::MIGRATOR")]
-        #[should_panic]
+        #[should_panic = "invalid id should not work"]
         async fn get_my_orders_with_invalid_id(pool: Pool<Postgres>) {
             let (_, _, _) = init_test_orders(&pool).await;
             let db_client = DBClient::new(pool.clone());

@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
 use actix_web::{HttpResponse, ResponseError};
 use bcrypt::BcryptError;
@@ -70,10 +70,10 @@ impl ErrorMessage {
             ErrorMessage::HashingError => "Error encountered while hashing password".to_string(),
             ErrorMessage::InvalidHashFormat => "Invalid password hash format".to_string(),
             ErrorMessage::PasswordTooLong(max_length) => {
-                format!("Password must not be more than {} characters", max_length)
+                format!("Password must not be more than {max_length} characters")
             }
             ErrorMessage::PasswordTooShort(max_length) => {
-                format!("Password must not be less than {} characters", max_length)
+                format!("Password must not be less than {max_length} characters")
             }
             ErrorMessage::InvalidToken => "Authentication token is invalid or expired".to_string(),
             ErrorMessage::TokenNotProvided => {
@@ -130,15 +130,11 @@ impl From<sqlx::Error> for HttpError {
             sqlx::Error::Database(db_err) => {
                 let message = db_err.message();
 
-                match message {
-                    "auto-buying" => HttpError::bad_request(ErrorMessage::AutoBuying),
-                    _ => {
-                        eprintln!(
-                            "Warning: unknown database error: {} -> convert it to server error",
-                            message
-                        );
+                if message == "auto-buying" {
+                    HttpError::bad_request(ErrorMessage::AutoBuying)
+                } else {
+                        eprintln!("Warning: unknown database error: {message} -> convert it to server error");
                         HttpError::server_error(ErrorMessage::ServerError)
-                    }
                 }
             }
 
@@ -148,51 +144,51 @@ impl From<sqlx::Error> for HttpError {
 }
 
 impl HttpError {
-    pub fn new(message: impl Into<String>, status: u16) -> Self {
+    pub fn new(message: impl Display, status: u16) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status,
         }
     }
 
-    pub fn server_error(message: impl Into<String>) -> Self {
+    pub fn server_error(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 500,
         }
     }
 
-    pub fn bad_request(message: impl Into<String>) -> Self {
+    pub fn bad_request(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 400,
         }
     }
 
-    pub fn conflict(message: impl Into<String>) -> Self {
+    pub fn conflict(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 409,
         }
     }
 
-    pub fn unauthorized(message: impl Into<String>) -> Self {
+    pub fn unauthorized(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 401,
         }
     }
 
-    pub fn not_found(message: impl Into<String>) -> Self {
+    pub fn not_found(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 404,
         }
     }
 
-    pub fn payment_required(message: impl Into<String>) -> Self {
+    pub fn payment_required(message: impl Display) -> Self {
         HttpError {
-            message: message.into(),
+            message: message.to_string(),
             status: 402,
         }
     }
