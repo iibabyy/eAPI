@@ -1017,7 +1017,7 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", password::hash("test").unwrap())
+            .save_user("test_user", "test_user@gmail.com", password::hash("password").unwrap())
             .await
             .unwrap();
 
@@ -1111,7 +1111,7 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", password::hash("test").unwrap())
+            .save_user("test_user", "test_user@gmail.com", password::hash("password").unwrap())
             .await
             .unwrap();
 

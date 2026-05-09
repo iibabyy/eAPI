@@ -353,7 +353,7 @@ mod tests {
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
-    #[should_panic = "invalid token should not work"]
+    #[should_panic = "Authentication token is invalid or expired"]
     async fn get_all_products_with_invalid_token(pool: Pool<Postgres>) {
         let (data, _, _) = init_test_products(&pool).await;
         let db_client = DBClient::new(pool.clone());

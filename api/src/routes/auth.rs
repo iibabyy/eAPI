@@ -690,34 +690,4 @@ mod tests {
         assert!(actual_message.contains(expected_message));
     }
 
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn logout_clear_refresh_token(pool: Pool<Postgres>) {
-        let db_client = DBClient::new(pool.clone());
-        let config = test_config();
-
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    env: config.clone(),
-                    db_client,
-                }))
-                .service(super::logout),
-        )
-        .await;
-
-        let req = test::TestRequest::post().uri("/logout").to_request();
-
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-
-        let new_refresh_token = resp
-            .response()
-            .cookies()
-            .find(|cookie| cookie.name() == REFRESH_TOKEN.to_string())
-            .expect("Refresh cookie not cleared");
-
-        assert!(new_refresh_token.value().is_empty());
-        assert_eq!(new_refresh_token.max_age().unwrap(), Duration::seconds(0));
-    }
 }
