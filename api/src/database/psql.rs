@@ -125,11 +125,11 @@ impl UserExtractor for DBClient {
         Ok(users)
     }
 
-    async fn save_user<T: Into<String> + Send>(
+    async fn save_user(
         &self,
-        name: T,
-        email: T,
-        password: T,
+        name: impl ToString + Send,
+        email: impl ToString + Send,
+        password: impl ToString + Send,
     ) -> Result<User, sqlx::Error> {
         let user = sqlx::query_as::<_, User>(
             r"
@@ -138,9 +138,9 @@ impl UserExtractor for DBClient {
 			RETURNING id, name, email, password, sold_in_cents, last_token_id, updated_at, created_at
 			",
         )
-        .bind(name.into())
-        .bind(email.into())
-        .bind(password.into())
+        .bind(name.to_string())
+        .bind(email.to_string())
+        .bind(password.to_string())
         .fetch_one(&self.pool)
         .await?;
 
@@ -511,7 +511,7 @@ impl UserUtils for DBClient {
 #[cfg(test)]
 mod user_tests {
     use super::*;
-    use crate::utils::test_utils::init_test_users;
+    use crate::utils::{password, test_utils::init_test_users};
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn get_user_by_id(pool: Pool<Postgres>) {
@@ -627,9 +627,9 @@ mod user_tests {
 
         let name = "Mohammed Dembele";
         let email = "mdembele@gmail.com";
-        let password = "somestrongpassword";
+        let hashed_password = password::hash("somestrongpassword").unwrap();
 
-        db_client.save_user(name, email, password).await.unwrap();
+        db_client.save_user(name, email, hashed_password).await.unwrap();
 
         let user = db_client
             .get_user_by_email(email.to_string())
@@ -648,9 +648,9 @@ mod user_tests {
 
         let name = "Imhad Thari";
         let email = "ithari@gmail.com";
-        let password = "mostsecurepass";
+        let hashed_password = password::hash("mostsecurepass").unwrap();
 
-        let result = db_client.save_user(name, email, password).await;
+        let result = db_client.save_user(name, email, hashed_password).await;
 
         match result {
             Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
@@ -669,10 +669,10 @@ mod user_tests {
 
         let too_long_name = "a".repeat(200);
         let email = "exemple@gamil.com";
-        let password = "password";
+        let hashed_password = password::hash("password").unwrap();
 
         let result = db_client
-            .save_user(too_long_name.as_str(), email, password)
+            .save_user(too_long_name, email, hashed_password)
             .await;
 
         assert!(result.is_err(), "Expected save to fail");
@@ -934,7 +934,7 @@ mod products_tests {
 #[cfg(test)]
 mod orders_test {
     use super::*;
-    use crate::utils::test_utils::init_test_orders;
+    use crate::utils::{password, test_utils::init_test_orders};
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn get_order_by_id(pool: Pool<Postgres>) {
@@ -1017,7 +1017,7 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", "test")
+            .save_user("test_user", "test_user@gmail.com", password::hash("test").unwrap())
             .await
             .unwrap();
 
@@ -1111,7 +1111,7 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", "test")
+            .save_user("test_user", "test_user@gmail.com", password::hash("test").unwrap())
             .await
             .unwrap();
 

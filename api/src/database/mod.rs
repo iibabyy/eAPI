@@ -31,11 +31,11 @@ pub trait UserExtractor {
         limit: usize,
     ) -> Result<Vec<User>, sqlx::Error>;
 
-    async fn save_user<T: Into<String> + Send>(
+    async fn save_user(
         &self,
-        name: T,
-        email: T,
-        password: T,
+        name: impl ToString + Send,
+        email: impl ToString + Send,
+        password: impl ToString + Send,
     ) -> Result<User, sqlx::Error>;
 
     async fn delete_user(&self, user_id: &Uuid) -> Result<(), sqlx::Error>;
