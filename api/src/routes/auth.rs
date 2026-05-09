@@ -58,7 +58,7 @@ async fn login(
         .get_user_by_email(infos.email)
         .await
         .map_err(|err| HttpError::server_error(err.to_string()))?
-        .ok_or_else(|| HttpError::not_found(ErrorMessage::UserNotFound))?;
+        .ok_or_else(|| HttpError::unauthorized(ErrorMessage::WrongCredentials))?;
 
     // check passwords
     let password_matches = match password::compare(&infos.password, &user.password) {
