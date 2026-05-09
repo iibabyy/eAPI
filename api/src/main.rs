@@ -12,7 +12,7 @@ mod routes;
 mod utils;
 
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Result};
+use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, rt::signal::unix::{SignalKind, signal}, web};
 use database::{init::init_database, psql::DBClient};
 use docs::ApiDoc;
 use sqlx::postgres::PgPoolOptions;
@@ -35,7 +35,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     init_database(&config.database_url).await?;
 
-    // creating db connection pool
     let db_client = DBClient::new(
         PgPoolOptions::new()
             .max_connections(25)
@@ -43,51 +42,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?,
     );
 
-    // // creating redis connection pool
-    // let redis_pool = deadpool_redis::Config::from_url(&config.redis_url)
-    //     .create_pool(Some(Runtime::Tokio1))?;
-
     let port = config.port;
 
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         let app_data = web::Data::new(AppState {
             db_client: db_client.clone(),
-            // redis: redis_pool.clone(),
             env: config.clone(),
         });
-
-        let cors = Cors::default()
-            .allow_any_header()
-            .allow_any_method()
-            .allow_any_origin();
-
-        let redirect_to_docs = async || -> Result<HttpResponse> {
-            Ok(HttpResponse::Found()
-                .append_header(("Location", "/docs/"))
-                .finish())
-        };
 
         App::new()
             .app_data(app_data)
             .configure(routes::config)
-            .service(
-                SwaggerUi::new("/docs/{_:.*}")
-                    .url("/docs/openapi.json", ApiDoc::openapi())
-                    .config(
-                        utoipa_swagger_ui::Config::from("/docs/openapi.json")
-                            .filter(true)
-                            .default_models_expand_depth(10), // .default_model_expand_depth(10),
-                    ),
-            )
+            .service(swagger_ui_service())
             .service(web::resource("/").route(web::get().to(redirect_to_docs)))
             .service(web::resource("/docs").route(web::get().to(redirect_to_docs)))
             .wrap(Logger::new("%a %r %s"))
-            .wrap(cors)
-        // .wrap(SessionMiddleware::new( redis_store.clone(), Key::generate() ))
-    })
-    .bind(("0.0.0.0", port))?
-    .run()
-    .await?;
+            .wrap(cors_wrapper())
+    });
+
+    let mut hangup    = signal(SignalKind::hangup())?;
+    let mut interrupt = signal(SignalKind::interrupt())?;
+    let mut terminate = signal(SignalKind::terminate())?;
+
+    server
+        .shutdown_signal(async move { hangup.recv().await; })
+        .shutdown_signal(async move { interrupt.recv().await; })
+        .shutdown_signal(async move { terminate.recv().await; })
+        .bind(("0.0.0.0", port))?
+        .run()
+        .await?;
 
     Ok(())
+}
+
+fn swagger_ui_service() -> utoipa_swagger_ui::SwaggerUi {
+    SwaggerUi::new("/docs/{_:.*}")
+    .url("/docs/openapi.json", ApiDoc::openapi())
+    .config(
+        utoipa_swagger_ui::Config::from("/docs/openapi.json")
+            .filter(true)
+            .default_models_expand_depth(10), // .default_model_expand_depth(10),
+    )
+}
+
+fn cors_wrapper() -> Cors {
+    Cors::default()
+        .allow_any_header()
+        .allow_any_method()
+        .allow_any_origin()
+}
+
+async fn redirect_to_docs() -> Result<HttpResponse> {
+    Ok(
+        HttpResponse::Found()
+        .append_header(("Location", "/docs/"))
+        .finish()
+    )
 }
