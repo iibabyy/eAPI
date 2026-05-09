@@ -12,7 +12,11 @@ mod routes;
 mod utils;
 
 use actix_cors::Cors;
-use actix_web::{App, HttpResponse, HttpServer, Result, middleware::Logger, rt::signal::unix::{SignalKind, signal}, web};
+use actix_web::{
+    middleware::Logger,
+    rt::signal::unix::{signal, SignalKind},
+    web, App, HttpResponse, HttpServer, Result,
+};
 use database::{init::init_database, psql::DBClient};
 use docs::ApiDoc;
 use sqlx::postgres::PgPoolOptions;
@@ -60,14 +64,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .wrap(cors_wrapper())
     });
 
-    let mut hangup    = signal(SignalKind::hangup())?;
+    let mut hangup = signal(SignalKind::hangup())?;
     let mut interrupt = signal(SignalKind::interrupt())?;
     let mut terminate = signal(SignalKind::terminate())?;
 
     server
-        .shutdown_signal(async move { hangup.recv().await; })
-        .shutdown_signal(async move { interrupt.recv().await; })
-        .shutdown_signal(async move { terminate.recv().await; })
+        .shutdown_signal(async move {
+            hangup.recv().await;
+        })
+        .shutdown_signal(async move {
+            interrupt.recv().await;
+        })
+        .shutdown_signal(async move {
+            terminate.recv().await;
+        })
         .bind(("0.0.0.0", port))?
         .run()
         .await?;
@@ -77,12 +87,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn swagger_ui_service() -> utoipa_swagger_ui::SwaggerUi {
     SwaggerUi::new("/docs/{_:.*}")
-    .url("/docs/openapi.json", ApiDoc::openapi())
-    .config(
-        utoipa_swagger_ui::Config::from("/docs/openapi.json")
-            .filter(true)
-            .default_models_expand_depth(10), // .default_model_expand_depth(10),
-    )
+        .url("/docs/openapi.json", ApiDoc::openapi())
+        .config(
+            utoipa_swagger_ui::Config::from("/docs/openapi.json")
+                .filter(true)
+                .default_models_expand_depth(10), // .default_model_expand_depth(10),
+        )
 }
 
 fn cors_wrapper() -> Cors {
@@ -93,9 +103,7 @@ fn cors_wrapper() -> Cors {
 }
 
 async fn redirect_to_docs() -> Result<HttpResponse> {
-    Ok(
-        HttpResponse::Found()
+    Ok(HttpResponse::Found()
         .append_header(("Location", "/docs/"))
-        .finish()
-    )
+        .finish())
 }

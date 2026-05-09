@@ -629,7 +629,10 @@ mod user_tests {
         let email = "mdembele@gmail.com";
         let hashed_password = password::hash("somestrongpassword").unwrap();
 
-        db_client.save_user(name, email, hashed_password).await.unwrap();
+        db_client
+            .save_user(name, email, hashed_password)
+            .await
+            .unwrap();
 
         let user = db_client
             .get_user_by_email(email.to_string())
@@ -1017,7 +1020,11 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", password::hash("password").unwrap())
+            .save_user(
+                "test_user",
+                "test_user@gmail.com",
+                password::hash("password").unwrap(),
+            )
             .await
             .unwrap();
 
@@ -1111,7 +1118,11 @@ mod orders_test {
         let db_client = DBClient::new(pool);
 
         let test_user = db_client
-            .save_user("test_user", "test_user@gmail.com", password::hash("password").unwrap())
+            .save_user(
+                "test_user",
+                "test_user@gmail.com",
+                password::hash("password").unwrap(),
+            )
             .await
             .unwrap();
 

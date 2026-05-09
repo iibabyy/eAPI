@@ -6,7 +6,10 @@ use std::str::FromStr;
 use uuid::Uuid;
 
 use super::config::Config;
-use crate::{database::{OrderExtractor, ProductExtractor, UserExtractor, psql::DBClient}, utils::password};
+use crate::{
+    database::{psql::DBClient, OrderExtractor, ProductExtractor, UserExtractor},
+    utils::password,
+};
 
 pub struct TestUser {
     name: &'static str,
@@ -55,7 +58,11 @@ pub async fn init_test_users(pool: &Pool<Postgres>) -> (Uuid, Uuid, Uuid) {
 
     for user_data in users {
         let user = db_client
-            .save_user(user_data.name, user_data.email, password::hash(user_data.password).unwrap())
+            .save_user(
+                user_data.name,
+                user_data.email,
+                password::hash(user_data.password).unwrap(),
+            )
             .await
             .unwrap();
         users_id.push(user.id);

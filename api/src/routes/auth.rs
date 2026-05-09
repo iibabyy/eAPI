@@ -11,12 +11,20 @@ use validator::Validate;
 
 use crate::{
     database::{
-        UserExtractor, UserModifier, UserUtils, transaction::{DBTransaction, ITransaction}
-    }, dtos::users::{
+        transaction::{DBTransaction, ITransaction},
+        UserExtractor, UserModifier, UserUtils,
+    },
+    dtos::users::{
         FilterUserDto, LoginResponseDto, LoginUserDto, RegisterUserDto, UserResponseDto,
-    }, error::{ErrorMessage, HttpError}, middleware::{Authenticated, RequireAuth}, utils::{
-        AppState, constants, password, status::Status, token::{self, extract_token_from}
-    }
+    },
+    error::{ErrorMessage, HttpError},
+    middleware::{Authenticated, RequireAuth},
+    utils::{
+        constants, password,
+        status::Status,
+        token::{self, extract_token_from},
+        AppState,
+    },
 };
 
 pub(super) fn config(config: &mut web::ServiceConfig) {
@@ -179,10 +187,7 @@ async fn register(
     tag = "Authentication"
 )]
 #[post("/logout", wrap = "RequireAuth")]
-async fn logout(
-    user: Authenticated,
-    data: web::Data<AppState>,
-) -> Result<HttpResponse, HttpError> {
+async fn logout(user: Authenticated, data: web::Data<AppState>) -> Result<HttpResponse, HttpError> {
     let cookie = CookieBuilder::new(constants::REFRESH_TOKEN.clone(), "")
         .path("/")
         .max_age(Duration::seconds(0))
@@ -194,11 +199,9 @@ async fn logout(
         .await
         .map_err(|_| HttpError::server_error(ErrorMessage::ServerError))?;
 
-    Ok(
-        HttpResponse::Ok()
-            .cookie(cookie)
-            .json(json!({"status": Status::Success}))
-    )
+    Ok(HttpResponse::Ok()
+        .cookie(cookie)
+        .json(json!({"status": Status::Success})))
 }
 
 #[utoipa::path(
@@ -357,7 +360,10 @@ mod tests {
         let email = "ibaby@gmail.com";
         let password = "password";
 
-        db_client.save_user(name, email, password::hash(password).unwrap()).await.unwrap();
+        db_client
+            .save_user(name, email, password::hash(password).unwrap())
+            .await
+            .unwrap();
 
         let app = test::init_service(
             App::new()
@@ -553,7 +559,11 @@ mod tests {
         let config = test_config();
 
         let _ = db_client
-            .save_user("Ayoub Arab", "ayarab@gmail.com", password::hash("password").unwrap())
+            .save_user(
+                "Ayoub Arab",
+                "ayarab@gmail.com",
+                password::hash("password").unwrap(),
+            )
             .await;
 
         let app = test::init_service(
@@ -594,7 +604,11 @@ mod tests {
         let config = test_config();
 
         let _ = db_client
-            .save_user("Ayoub Arab", "ayarab@gmail.com", password::hash("password").unwrap())
+            .save_user(
+                "Ayoub Arab",
+                "ayarab@gmail.com",
+                password::hash("password").unwrap(),
+            )
             .await;
 
         let app = test::init_service(
@@ -689,5 +703,4 @@ mod tests {
 
         assert!(actual_message.contains(expected_message));
     }
-
 }
